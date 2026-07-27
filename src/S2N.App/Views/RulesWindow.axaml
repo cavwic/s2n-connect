@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="S2N.Views.RulesWindow"
+        Title="规则管理"
+        Width="900"
+        Height="620"
+        WindowStartupLocation="CenterOwner">
+  <Grid Margin="20" RowDefinitions="*,Auto" RowSpacing="14">
+    <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+      <Border Classes="card">
+        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+          <TextBlock Text="指定程序（每行一个）"
+                     FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Grid.Row="1"
+                     Text="命中后，该程序的全部公网流量走 VPS"
+                     TextWrapping="Wrap"/>
+          <TextBox Grid.Row="2" x:Name="ProcessesBox"
+                   AcceptsReturn="True" TextWrapping="NoWrap"
+                   VerticalScrollBarVisibility="Auto"
+                   HorizontalScrollBarVisibility="Auto"/>
+        </Grid>
+      </Border>
+      <Border Grid.Column="1" Classes="card">
+        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+          <TextBlock Text="指定域名后缀（每行一个）"
+                     FontSize="18" FontWeight="SemiBold"/>
+          <TextBlock Grid.Row="1"
+                     Text="任何程序访问命中域名时均走 VPS，例如 google.com"
+                     TextWrapping="Wrap"/>
+          <TextBox Grid.Row="2" x:Name="DomainsBox"
+                   AcceptsReturn="True" TextWrapping="NoWrap"
+                   VerticalScrollBarVisibility="Auto"
+                   HorizontalScrollBarVisibility="Auto"/>
+        </Grid>
+      </Border>
+    </Grid>
+    <StackPanel Grid.Row="1" Orientation="Horizontal"
+                HorizontalAlignment="Right" Spacing="10">
+      <Button Content="取消" Click="Cancel_Click"/>
+      <Button Classes="primary" Content="保存" Click="Save_Click"/>
+    </StackPanel>
+  </Grid>
+</Window>

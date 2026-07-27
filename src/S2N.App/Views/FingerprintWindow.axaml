@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="S2N.Views.FingerprintWindow"
+        Title="确认 SSH 服务器指纹"
+        Width="620"
+        Height="300"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+  <StackPanel Margin="22" Spacing="14">
+    <TextBlock Text="首次连接该 VPS。请通过供应商控制台或可信渠道核对以下 SSH Host Key 指纹："
+               TextWrapping="Wrap"/>
+    <TextBox x:Name="FingerprintBox"
+             IsReadOnly="True"
+             TextWrapping="Wrap"/>
+    <TextBlock Text="确认后，S2N 会按 VPS 地址和端口保存该指纹；后续若发生变化，连接会被拒绝。"
+               Opacity="0.7"
+               TextWrapping="Wrap"/>
+    <StackPanel Orientation="Horizontal"
+                HorizontalAlignment="Right"
+                Spacing="10">
+      <Button Content="取消" Click="Cancel_Click"/>
+      <Button Classes="primary"
+              Content="信任并继续"
+              Click="Trust_Click"/>
+    </StackPanel>
+  </StackPanel>
+</Window>

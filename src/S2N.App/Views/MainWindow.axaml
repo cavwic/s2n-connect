@@ -1,0 +1,105 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="S2N.Views.MainWindow"
+        Title="S2N Connect"
+        Width="900"
+        Height="720"
+        MinWidth="820"
+        MinHeight="650"
+        WindowStartupLocation="CenterScreen">
+  <ScrollViewer>
+    <StackPanel Margin="24" Spacing="16">
+      <StackPanel>
+        <TextBlock Text="S2N" FontSize="30" FontWeight="SemiBold"/>
+        <TextBlock Text="自建 VPS 与 sing-box 跨平台管理工具"
+                   Opacity="0.68"/>
+      </StackPanel>
+
+      <Border Classes="card">
+        <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+              RowSpacing="10">
+          <TextBlock Grid.Row="0" Text="本地 IP 及位置"/>
+          <TextBlock Grid.Row="0" Grid.Column="1" x:Name="LocalIpText"
+                     Text="获取中" TextWrapping="Wrap"/>
+          <TextBlock Grid.Row="1" Text="出口 IP 及位置"/>
+          <TextBlock Grid.Row="1" Grid.Column="1" x:Name="ExitIpText"
+                     Text="未连接" TextWrapping="Wrap"/>
+          <TextBlock Grid.Row="2" Text="连接状态"/>
+          <TextBlock Grid.Row="2" Grid.Column="1" x:Name="ConnectionText"
+                     Text="未连接"/>
+          <TextBlock Grid.Row="3" Text="VPS 部署状态"/>
+          <TextBlock Grid.Row="3" Grid.Column="1" x:Name="VpsStatusText"
+                     Text="未检测" TextWrapping="Wrap"/>
+          <TextBlock Grid.Row="4" Text="sing-box 部署状态"/>
+          <TextBlock Grid.Row="4" Grid.Column="1" x:Name="SingBoxStatusText"
+                     Text="未检测" TextWrapping="Wrap"/>
+        </Grid>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="12">
+          <TextBlock Text="部署" FontSize="20" FontWeight="SemiBold"/>
+          <Grid ColumnDefinitions="140,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                RowSpacing="10" ColumnSpacing="10">
+            <TextBlock Grid.Row="0" Text="VPS 地址" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="0" Grid.Column="1" x:Name="VpsHostBox"
+                     Watermark="例如 203.0.113.10"/>
+            <Button Grid.Row="0" Grid.Column="2" x:Name="TestVpsButton"
+                    Content="测试 VPS" Click="TestVps_Click"/>
+
+            <TextBlock Grid.Row="1" Text="SSH 用户 / 端口" VerticalAlignment="Center"/>
+            <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,120" ColumnSpacing="8">
+              <TextBox x:Name="VpsUserBox" Watermark="root"/>
+              <NumericUpDown Grid.Column="1" x:Name="VpsPortBox"
+                             Minimum="1" Maximum="65535" Value="22"/>
+            </Grid>
+
+            <TextBlock Grid.Row="2" Text="SSH 私钥" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="2" Grid.Column="1" x:Name="SshKeyBox"
+                     IsReadOnly="True" Watermark="连接成功后才保存路径"/>
+            <Button Grid.Row="2" Grid.Column="2" Content="选择私钥"
+                    Click="ChooseSshKey_Click"/>
+
+            <TextBlock Grid.Row="3" Text="私钥口令" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="3" Grid.Column="1" x:Name="KeyPassphraseBox"
+                     PasswordChar="●" Watermark="仅本次使用，不保存"/>
+
+            <TextBlock Grid.Row="4" Text="sing-box 路径" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="4" Grid.Column="1" x:Name="SingBoxPathBox"
+                     IsReadOnly="True" Watermark="用户选择安装目录"/>
+            <Button Grid.Row="4" Grid.Column="2" Content="选择并安装"
+                    Click="InstallSingBox_Click"/>
+
+            <TextBlock Grid.Row="5" Text="部署操作" VerticalAlignment="Center"/>
+            <StackPanel Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
+                        Orientation="Horizontal" Spacing="10">
+              <Button Classes="primary" Content="一键部署"
+                      Click="OneClickDeploy_Click"/>
+              <Button Content="仅部署 VPS" Click="DeployVps_Click"/>
+              <ProgressBar x:Name="ProgressBar" Width="220"
+                           Minimum="0" Maximum="100" IsVisible="False"/>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="12">
+          <TextBlock Text="使用" FontSize="20" FontWeight="SemiBold"/>
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Classes="primary" x:Name="ConnectButton"
+                    Content="连接" Click="Connect_Click"/>
+            <Button x:Name="StopButton" Content="停止"
+                    Click="Stop_Click"/>
+            <Button Content="规则管理" Click="Rules_Click"/>
+            <Button Content="刷新状态" Click="Refresh_Click"/>
+            <Button Content="退出" Click="Exit_Click"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <TextBlock x:Name="MessageText" TextWrapping="Wrap"
+                 Foreground="#C24545"/>
+    </StackPanel>
+  </ScrollViewer>
+</Window>

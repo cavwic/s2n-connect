@@ -1,0 +1,64 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            rid: win-x64
+            archive: zip
+          - runner: windows-latest
+            rid: win-arm64
+            archive: zip
+          - runner: macos-latest
+            rid: osx-x64
+            archive: tar
+          - runner: macos-latest
+            rid: osx-arm64
+            archive: tar
+          - runner: ubuntu-latest
+            rid: linux-x64
+            archive: tar
+          - runner: ubuntu-latest
+            rid: linux-arm64
+            archive: tar
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet restore
+      - run: >
+          dotnet publish src/S2N.App/S2N.App.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -o artifacts/${{ matrix.rid }}
+
+      - name: Archive Windows
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: Compress-Archive -Path "artifacts/${{ matrix.rid }}/*" -DestinationPath "S2N-${{ matrix.rid }}.zip"
+
+      - name: Archive Unix
+        if: matrix.archive == 'tar'
+        shell: bash
+        run: tar -C "artifacts/${{ matrix.rid }}" -czf "S2N-${{ matrix.rid }}.tar.gz" .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: S2N-${{ matrix.rid }}
+          path: S2N-${{ matrix.rid }}.*
