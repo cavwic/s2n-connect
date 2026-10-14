@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using Renci.SshNet;
+using S2N.Localization;
 using S2N.Models;
 
 namespace S2N.Services;
@@ -135,7 +136,8 @@ public sealed class SshService
             var output = command.Execute();
             if (command.ExitStatus != 0)
                 throw new InvalidOperationException(
-                    $"Remote command failed: {command.Error}");
+                    L10n.T("远程命令失败：", "Remote command failed: ")
+                    + L10n.TranslateTechnicalMessage(command.Error));
 
             client.Disconnect();
             return output;
@@ -146,7 +148,7 @@ public sealed class SshService
     {
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             throw new FileNotFoundException(
-                "SSH private key file was not found.",
+                L10n.T("未找到 SSH 私钥文件。", "SSH private key file was not found."),
                 path);
 
         var header = File.ReadLines(path).Take(3)
@@ -158,7 +160,9 @@ public sealed class SshService
 
         if (header is null)
             throw new InvalidDataException(
-                "The selected file does not look like a supported SSH private key.");
+                L10n.T(
+                "所选文件不像受支持的 SSH 私钥。",
+                "The selected file does not look like a supported SSH private key."));
     }
 }
 

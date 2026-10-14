@@ -1,0 +1,51 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="S2N.Views.MessageDialog"
+        Width="520"
+        MinWidth="420"
+        MaxHeight="520"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner">
+  <Grid Margin="22" RowDefinitions="Auto,*,Auto" RowSpacing="16">
+    <Grid ColumnDefinitions="42,*" ColumnSpacing="12">
+      <Border x:Name="IconBorder"
+              Width="34" Height="34"
+              CornerRadius="17"
+              VerticalAlignment="Top">
+        <TextBlock x:Name="IconText"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="20"
+                   FontWeight="SemiBold"/>
+      </Border>
+      <TextBlock Grid.Column="1"
+                 x:Name="TitleText"
+                 FontSize="19"
+                 FontWeight="SemiBold"
+                 VerticalAlignment="Center"
+                 TextWrapping="Wrap"/>
+    </Grid>
+
+    <ScrollViewer Grid.Row="1"
+                  MaxHeight="300"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+      <TextBox x:Name="BodyText"
+               IsReadOnly="True"
+               AcceptsReturn="True"
+               TextWrapping="Wrap"
+               BorderThickness="0"
+               Background="Transparent"
+               Padding="0"/>
+    </ScrollViewer>
+
+    <Button Grid.Row="2"
+            x:Name="CloseButton"
+            Classes="primary"
+            MinWidth="90"
+            HorizontalAlignment="Right"
+            Click="Close_Click"/>
+  </Grid>
+</Window>

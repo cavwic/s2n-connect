@@ -2,7 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Styling;
 using Avalonia.Threading;
+using S2N.Localization;
 using S2N.Models;
 using S2N.Services;
 
@@ -16,6 +18,7 @@ public partial class MainWindow : Window
     private readonly SingBoxInstaller _singBoxInstaller = new();
     private readonly SingBoxConfigService _configService = new();
     private readonly PrivilegeLauncher _privilegeLauncher = new();
+    private readonly StartupRegistrationService _startupRegistration = new();
     private readonly ExistingInstallDiscoveryService _installDiscovery;
 
     private AppSettings _settings = new();
@@ -25,12 +28,16 @@ public partial class MainWindow : Window
     private string _keyPassphrase = "";
     private readonly DispatcherTimer _statusTimer;
     private int _refreshInProgress;
+    private int _autoConnectInProgress;
+    private bool _loadingPreferences;
+    private bool _initialized;
 
     public bool IsExiting { get; private set; }
 
     public MainWindow()
     {
         InitializeComponent();
+        L10n.Apply(this);
 
         _installDiscovery = new ExistingInstallDiscoveryService(_singBoxInstaller);
 
@@ -48,8 +55,25 @@ public partial class MainWindow : Window
 
         Opened += async (_, _) =>
         {
-            await InitializeAsync();
-            _statusTimer.Start();
+            if (_initialized) return;
+            _initialized = true;
+
+            try
+            {
+                await InitializeAsync();
+                _statusTimer.Start();
+
+                if (_settings.AutoConnect
+                    && _settings.HasSuccessfulConnection)
+                {
+                    await AutoConnectAfterReadinessAsync();
+                }
+            }
+            catch
+            {
+                _initialized = false;
+                throw;
+            }
         };
 
         PropertyChanged += (_, e) =>
@@ -60,14 +84,17 @@ public partial class MainWindow : Window
         };
     }
 
-    public Task ConnectFromTrayAsync() => ConnectInternalAsync();
+    public async Task ConnectFromTrayAsync() =>
+        await ConnectInternalAsync();
+
     public Task StopFromTrayAsync() => StopInternalAsync();
 
     public async Task ExitAsync()
     {
+        if (!await StopInternalAsync(showResultDialog: false)) return;
         IsExiting = true;
         _statusTimer.Stop();
-        await StopInternalAsync();
+        if (Application.Current is App app) app.DisposeTrayIcon();
         if (Application.Current?.ApplicationLifetime
             is Avalonia.Controls.ApplicationLifetimes
                 .IClassicDesktopStyleApplicationLifetime desktop)
@@ -77,9 +104,39 @@ public partial class MainWindow : Window
     private async Task InitializeAsync()
     {
         _settings = await _settingsStore.LoadAsync();
+
+        _loadingPreferences = true;
+        try
+        {
+            ApplyTheme(_settings.ThemeMode);
+            SelectThemeMode(_settings.ThemeMode);
+            GlobalModeCheckBox.IsChecked = _settings.GlobalMode;
+
+            try
+            {
+                _settings.AutoStart =
+                    await _startupRegistration.IsEnabledAsync();
+            }
+            catch
+            {
+                // Keep the saved value when the operating system cannot be queried.
+            }
+
+            AutoStartCheckBox.IsChecked = _settings.AutoStart;
+            AutoConnectCheckBox.IsEnabled =
+                _settings.HasSuccessfulConnection;
+            AutoConnectCheckBox.IsChecked =
+                _settings.HasSuccessfulConnection
+                && _settings.AutoConnect;
+        }
+        finally
+        {
+            _loadingPreferences = false;
+        }
+
         VpsHostBox.Text = _settings.VpsHost;
         VpsUserBox.Text = _settings.VpsUser;
-        VpsPortBox.Value = _settings.VpsPort;
+        VpsPortBox.Text = _settings.VpsPort.ToString();
         SshKeyBox.Text = _settings.SshKeyPath;
         SingBoxPathBox.Text = _settings.SingBoxInstallDirectory;
 
@@ -91,39 +148,37 @@ public partial class MainWindow : Window
                     : StringComparison.Ordinal))
         {
             _settings.SingBoxExecutablePath = discovered;
-            _settings.SingBoxInstallDirectory = Path.GetDirectoryName(discovered) ?? "";
+            _settings.SingBoxInstallDirectory =
+                Path.GetDirectoryName(discovered) ?? "";
             SingBoxPathBox.Text = _settings.SingBoxInstallDirectory;
-            await _settingsStore.SaveAsync(_settings);
-            MessageText.Text = "已识别现有 sing-box 安装。";
         }
+
         _profile = await _settingsStore.LoadVpsProfileAsync(
             _settings.VpsProfilePath);
+        await _settingsStore.SaveAsync(_settings);
         await RefreshStateAsync();
     }
 
     private async Task RefreshStateAsync()
     {
-        // A slow network probe can last longer than the five-second timer.
-        // Skip overlapping refreshes instead of stacking concurrent probes.
         if (Interlocked.Exchange(ref _refreshInProgress, 1) == 1)
             return;
 
         try
         {
+            var installed = _singBoxManager!.IsInstalled(_settings);
+            var running = _singBoxManager.IsRunning(_settings);
+            ConnectButton.IsEnabled =
+                installed && _profile is not null && !running;
+            StopButton.IsEnabled = running;
+
             LocalIpText.Text =
                 await _networkProbe.GetLocalIpLocationAsync();
 
-            var installed = _singBoxManager!.IsInstalled(_settings);
-            var running = _singBoxManager.IsRunning(_settings);
-
-            // Connection state is process-first:
-            // 1. No sing-box process => disconnected, with no Google probe.
-            // 2. sing-box process exists => probe Google through the managed
-            //    local proxy before showing connected.
             if (!running)
             {
-                ConnectionText.Text = "未连接";
-                ExitIpText.Text = "未连接";
+                ConnectionText.Text = L10n.T("未连接", "Disconnected");
+                ExitIpText.Text = L10n.T("未连接", "Disconnected");
             }
             else
             {
@@ -132,18 +187,23 @@ public partial class MainWindow : Window
 
                 if (proxy.Connected)
                 {
-                    ConnectionText.Text = "已连接";
+                    ConnectionText.Text = L10n.T("已连接", "Connected");
                     ExitIpText.Text = proxy.ExitInfo;
+                    await MarkConnectionSucceededAsync();
                 }
                 else
                 {
                     ConnectionText.Text =
-                        "未连接（sing-box 已启动，外网检测失败）";
-                    ExitIpText.Text = "检测失败";
+                        L10n.T(
+                            "未连接（sing-box 已启动，外网检测失败）",
+                            "Disconnected (sing-box is running, but the external connectivity check failed)");
+                    ExitIpText.Text = L10n.T("检测失败", "Check failed");
                 }
             }
 
-            SingBoxStatusText.Text = installed ? "已部署" : "未部署";
+            SingBoxStatusText.Text = installed
+                ? L10n.T("已部署", "Deployed")
+                : L10n.T("未部署", "Not deployed");
 
             if (_profile is not null)
             {
@@ -152,23 +212,28 @@ public partial class MainWindow : Window
                     _profile.ServerPort,
                     TimeSpan.FromSeconds(2));
                 VpsStatusText.Text = portOpen
-                    ? "已部署"
-                    : "已配置，但 TCP 443 当前不可达";
+                    ? L10n.T("已部署", "Deployed")
+                    : L10n.T(
+                        "已配置，但 TCP 443 当前不可达",
+                        "Configured, but TCP 443 is currently unreachable");
             }
             else
             {
-                VpsStatusText.Text = "未部署";
+                VpsStatusText.Text = L10n.T("未部署", "Not deployed");
             }
 
-            // Button availability depends only on the real process state.
-            // A slow or failed Google probe must never disable Stop.
             ConnectButton.IsEnabled =
-                installed && _profile is not null && !running;
-            StopButton.IsEnabled = running;
+                installed && _profile is not null
+                && !_singBoxManager.IsRunning(_settings);
+            StopButton.IsEnabled = _singBoxManager.IsRunning(_settings);
+            AutoConnectCheckBox.IsEnabled =
+                _settings.HasSuccessfulConnection;
         }
-        catch (Exception ex)
+        catch
         {
-            MessageText.Text = ex.Message;
+            ConnectionText.Text =
+                L10n.T("状态检测失败", "Status check failed");
+            ExitIpText.Text = L10n.T("检测失败", "Check failed");
         }
         finally
         {
@@ -183,11 +248,12 @@ public partial class MainWindow : Window
         var files = await StorageProvider.OpenFilePickerAsync(
             new FilePickerOpenOptions
             {
-                Title = "选择 SSH 私钥",
+                Title = L10n.T("选择 SSH 私钥", "Select SSH private key"),
                 AllowMultiple = false,
                 FileTypeFilter =
                 [
-                    new FilePickerFileType("SSH private keys")
+                    new FilePickerFileType(
+                        L10n.T("SSH 私钥", "SSH private keys"))
                     {
                         Patterns =
                         [
@@ -209,13 +275,16 @@ public partial class MainWindow : Window
         {
             SshService.ValidatePrivateKey(path);
             _candidateSshKeyPath = path;
-            SshKeyBox.Text = path + "（待验证）";
-            MessageText.Text =
-                "已选择私钥。只有 VPS 连接成功后才会保存该路径。";
+            SshKeyBox.Text = path + L10n.T("（待验证）", " (pending validation)");
+            await ShowInfoAsync(
+                L10n.T(
+                    "已选择私钥。只有 VPS 连接成功后才会保存该路径。",
+                    "Private key selected. The path is saved only after a successful VPS connection."));
         }
         catch (Exception ex)
         {
-            MessageText.Text = "导入失败：" + ex.Message;
+            await ShowErrorAsync(
+                L10n.T("导入失败：", "Import failed: ") + ex.Message);
         }
     }
 
@@ -224,7 +293,8 @@ public partial class MainWindow : Window
         RoutedEventArgs e) =>
         await TestVpsInternalAsync();
 
-    private async Task<bool> TestVpsInternalAsync()
+    private async Task<bool> TestVpsInternalAsync(
+        bool showSuccessDialog = true)
     {
         try
         {
@@ -232,16 +302,30 @@ public partial class MainWindow : Window
             _settings.VpsUser = string.IsNullOrWhiteSpace(VpsUserBox.Text)
                 ? "root"
                 : VpsUserBox.Text.Trim();
-            _settings.VpsPort = (int)(VpsPortBox.Value ?? 22);
+            var portText = (VpsPortBox.Text ?? "").Trim();
+
+            if (!int.TryParse(portText, out var vpsPort) ||
+                vpsPort < 1 ||
+                vpsPort > 65535)
+            {
+                throw new InvalidOperationException(
+                    L10n.T(
+                        "SSH 端口必须是 1 到 65535 之间的整数。",
+                        "The SSH port must be an integer between 1 and 65535."));
+            }
+
+            _settings.VpsPort = vpsPort;
             _keyPassphrase = KeyPassphraseBox.Text ?? "";
             if (string.IsNullOrWhiteSpace(_settings.VpsHost))
-                throw new InvalidOperationException("请输入 VPS 地址。");
+                throw new InvalidOperationException(
+                    L10n.T("请输入 VPS 地址。", "Enter the VPS address."));
 
             var keyPath = !string.IsNullOrWhiteSpace(_candidateSshKeyPath)
                 ? _candidateSshKeyPath
                 : _settings.SshKeyPath;
             if (string.IsNullOrWhiteSpace(keyPath))
-                throw new InvalidOperationException("请选择 SSH 私钥。");
+                throw new InvalidOperationException(
+                    L10n.T("请选择 SSH 私钥。", "Select an SSH private key."));
 
             var result = await _sshService.TestConnectionAsync(
                 _settings,
@@ -262,14 +346,20 @@ public partial class MainWindow : Window
             SshKeyBox.Text = keyPath;
             await _settingsStore.SaveAsync(_settings);
 
-            MessageText.Text =
-                "VPS 连接成功：" + result.ServerInfo
-                    .Replace(Environment.NewLine, " / ");
+            if (showSuccessDialog)
+            {
+                await ShowSuccessAsync(
+                    L10n.T("VPS 连接成功：", "VPS connection succeeded: ")
+                    + result.ServerInfo.Replace(Environment.NewLine, " / "));
+            }
+
             return true;
         }
         catch (Exception ex)
         {
-            MessageText.Text = "VPS 连接失败：" + ex.Message;
+            await ShowErrorAsync(
+                L10n.T("VPS 连接失败：", "VPS connection failed: ")
+                + ex.Message);
             return false;
         }
     }
@@ -280,8 +370,7 @@ public partial class MainWindow : Window
             () => new FingerprintWindow(fingerprint)
                 .ShowDialog<bool>(this));
 
-        var dialogTask = operation.GetAwaiter().GetResult();
-        return dialogTask.GetAwaiter().GetResult();
+        return operation.GetAwaiter().GetResult();
     }
 
     private async void InstallSingBox_Click(
@@ -293,7 +382,9 @@ public partial class MainWindow : Window
             var folders = await StorageProvider.OpenFolderPickerAsync(
                 new FolderPickerOpenOptions
                 {
-                    Title = "选择 sing-box 安装目录",
+                    Title = L10n.T(
+                        "选择 sing-box 安装目录",
+                        "Select the sing-box installation directory"),
                     AllowMultiple = false
                 });
 
@@ -316,13 +407,18 @@ public partial class MainWindow : Window
             SingBoxPathBox.Text = directory;
             await _settingsStore.SaveAsync(_settings);
 
-            MessageText.Text =
-                "sing-box 安装完成，下载包和临时目录已删除。";
+            await ShowSuccessAsync(
+                L10n.T(
+                    "sing-box 安装完成，下载包和临时目录已删除。",
+                    "sing-box installation completed. The download package and temporary directory were deleted."));
         }
         catch (Exception ex)
         {
-            MessageText.Text =
-                "sing-box 安装失败：" + ex.Message;
+            await ShowErrorAsync(
+                L10n.T(
+                    "sing-box 安装失败：",
+                    "sing-box installation failed: ")
+                + ex.Message);
         }
         finally
         {
@@ -342,7 +438,9 @@ public partial class MainWindow : Window
                 var folders = await StorageProvider.OpenFolderPickerAsync(
                     new FolderPickerOpenOptions
                     {
-                        Title = "选择 sing-box 安装目录",
+                        Title = L10n.T(
+                            "选择 sing-box 安装目录",
+                            "Select the sing-box installation directory"),
                         AllowMultiple = false
                     });
                 var directory = folders.FirstOrDefault()?.TryGetLocalPath();
@@ -365,22 +463,32 @@ public partial class MainWindow : Window
                 : _settings.SshKeyPath;
             if (string.IsNullOrWhiteSpace(keyPath))
             {
-                MessageText.Text = "请先选择 SSH 私钥，然后再次点击一键部署。";
+                await ShowWarningAsync(
+                    L10n.T(
+                        "请先选择 SSH 私钥，然后再次点击一键部署。",
+                        "Select an SSH private key, then click One-click deploy again."));
                 return;
             }
 
-            if (!await TestVpsInternalAsync()) return;
+            if (!await TestVpsInternalAsync(showSuccessDialog: false)) return;
             var service = new VpsDeploymentService(
                 _sshService, _settingsStore);
             _profile = await service.DeployAsync(
                 _settings, _keyPassphrase);
             await _settingsStore.SaveAsync(_settings);
-            MessageText.Text = "VPS 与本地 sing-box 已完成部署。";
+            await ShowSuccessAsync(
+                L10n.T(
+                    "VPS 与本地 sing-box 已完成部署。",
+                    "The VPS and local sing-box deployment is complete."));
             await RefreshStateAsync();
         }
         catch (Exception ex)
         {
-            MessageText.Text = "一键部署失败：" + ex.Message;
+            await ShowErrorAsync(
+                L10n.T(
+                    "一键部署失败：",
+                    "One-click deployment failed: ")
+                + ex.Message);
         }
         finally
         {
@@ -394,7 +502,7 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (!await TestVpsInternalAsync()) return;
+            if (!await TestVpsInternalAsync(showSuccessDialog: false)) return;
 
             var service = new VpsDeploymentService(
                 _sshService,
@@ -403,12 +511,15 @@ public partial class MainWindow : Window
                 _settings,
                 _keyPassphrase);
 
-            MessageText.Text = "VPS 部署完成。";
+            await ShowSuccessAsync(
+                L10n.T("VPS 部署完成。", "VPS deployment completed."));
             await RefreshStateAsync();
         }
         catch (Exception ex)
         {
-            MessageText.Text = "VPS 部署失败：" + ex.Message;
+            await ShowErrorAsync(
+                L10n.T("VPS 部署失败：", "VPS deployment failed: ")
+                + ex.Message);
         }
     }
 
@@ -417,25 +528,160 @@ public partial class MainWindow : Window
         RoutedEventArgs e) =>
         await ConnectInternalAsync();
 
-    private async Task ConnectInternalAsync()
+    private async Task<bool> ConnectInternalAsync(
+        bool showResultDialog = true)
     {
         try
         {
             _profile ??= await _settingsStore.LoadVpsProfileAsync(
                 _settings.VpsProfilePath);
             if (_profile is null)
-                throw new InvalidOperationException("请先部署 VPS。");
+                throw new InvalidOperationException(
+                    L10n.T("请先部署 VPS。", "Deploy the VPS first."));
 
             await _singBoxManager!.ConnectAsync(
                 _settings,
                 _profile);
-            await Task.Delay(800);
-            MessageText.Text = "连接命令已执行。";
+
+            var connected = await WaitForManagedConnectionAsync(
+                TimeSpan.FromSeconds(30));
+
+            if (connected)
+            {
+                await MarkConnectionSucceededAsync();
+                if (showResultDialog)
+                {
+                    await ShowSuccessAsync(
+                        L10n.T("连接成功。", "Connected successfully."));
+                }
+            }
+            else if (showResultDialog)
+            {
+                await ShowWarningAsync(
+                    L10n.T(
+                        "sing-box 已启动，但暂未通过外网检测；状态检查将继续重试。",
+                        "sing-box started, but the external connectivity check has not passed yet. Status checks will continue."));
+            }
+
             await RefreshStateAsync();
+            return connected;
         }
         catch (Exception ex)
         {
-            MessageText.Text = "连接失败：" + ex.Message;
+            if (showResultDialog)
+            {
+                await ShowErrorAsync(
+                    L10n.T("连接失败：", "Connection failed: ") + ex.Message);
+            }
+            return false;
+        }
+    }
+
+    private async Task<bool> WaitForManagedConnectionAsync(TimeSpan timeout)
+    {
+        var deadline = DateTimeOffset.UtcNow + timeout;
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            if (_singBoxManager!.IsRunning(_settings))
+            {
+                var probe =
+                    await _networkProbe.ProbeManagedConnectionAsync();
+                if (probe.Connected)
+                {
+                    ConnectionText.Text = L10n.T("已连接", "Connected");
+                    ExitIpText.Text = probe.ExitInfo;
+                    return true;
+                }
+            }
+
+            await Task.Delay(TimeSpan.FromSeconds(1));
+        }
+
+        return false;
+    }
+
+    private async Task MarkConnectionSucceededAsync()
+    {
+        if (_settings.HasSuccessfulConnection)
+            return;
+
+        _settings.HasSuccessfulConnection = true;
+        AutoConnectCheckBox.IsEnabled = true;
+        await _settingsStore.SaveAsync(_settings);
+    }
+
+    private async Task AutoConnectAfterReadinessAsync()
+    {
+        if (Interlocked.Exchange(ref _autoConnectInProgress, 1) == 1)
+            return;
+
+        try
+        {
+            _profile ??= await _settingsStore.LoadVpsProfileAsync(
+                _settings.VpsProfilePath);
+
+            if (_profile is null || !_singBoxManager!.IsInstalled(_settings))
+            {
+                await ShowWarningAsync(
+                    L10n.T(
+                        "自动连接未执行：VPS 配置或 sing-box 不完整。",
+                        "Auto-connect was not started because the VPS profile or sing-box installation is incomplete."));
+                return;
+            }
+
+            var deadline = DateTimeOffset.UtcNow + TimeSpan.FromMinutes(2);
+            while (DateTimeOffset.UtcNow < deadline)
+            {
+                if (_singBoxManager.IsRunning(_settings))
+                {
+                    var existing =
+                        await _networkProbe.ProbeManagedConnectionAsync();
+                    if (existing.Connected)
+                    {
+                        await MarkConnectionSucceededAsync();
+                        await RefreshStateAsync();
+                        await ShowSuccessAsync(
+                            L10n.T(
+                                "自动连接已确认当前连接正常。",
+                                "Auto-connect confirmed that the existing connection is healthy."));
+                        return;
+                    }
+
+                    await _singBoxManager.StopAsync(_settings);
+                }
+
+                var networkReady = _networkProbe.IsNetworkAvailable()
+                    && !string.IsNullOrWhiteSpace(
+                        _networkProbe.DetectLocalDns());
+                var vpsReady = networkReady
+                    && await _networkProbe.IsTcpPortOpenAsync(
+                        _profile.ServerIp,
+                        _profile.ServerPort,
+                        TimeSpan.FromSeconds(2));
+
+                if (vpsReady)
+                {
+                    await ConnectInternalAsync();
+                    return;
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(3));
+            }
+
+            await ShowWarningAsync(
+                L10n.T(
+                    "自动连接等待超时，请检查网络、VPS 和 sing-box 状态。",
+                    "Auto-connect timed out. Check the network, VPS, and sing-box status."));
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorAsync(
+                L10n.T("自动连接失败：", "Auto-connect failed: ")
+                + ex.Message);
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _autoConnectInProgress, 0);
         }
     }
 
@@ -444,17 +690,24 @@ public partial class MainWindow : Window
         RoutedEventArgs e) =>
         await StopInternalAsync();
 
-    private async Task StopInternalAsync()
+    private async Task<bool> StopInternalAsync(
+        bool showResultDialog = true)
     {
         try
         {
             await _singBoxManager!.StopAsync(_settings);
-            MessageText.Text = "已停止。";
             await RefreshStateAsync();
+            if (showResultDialog)
+            {
+                await ShowInfoAsync(L10n.T("已停止。", "Stopped."));
+            }
+            return true;
         }
         catch (Exception ex)
         {
-            MessageText.Text = "停止失败：" + ex.Message;
+            await ShowErrorAsync(
+                L10n.T("停止失败：", "Stop failed: ") + ex.Message);
+            return false;
         }
     }
 
@@ -472,13 +725,25 @@ public partial class MainWindow : Window
         _settings.DomainSuffixes = dialog.DomainSuffixes;
         await _settingsStore.SaveAsync(_settings);
 
+        var reconnected = true;
         if (_singBoxManager!.IsRunning(_settings))
         {
-            await StopInternalAsync();
-            await ConnectInternalAsync();
+            reconnected = await StopInternalAsync(showResultDialog: false)
+                && await ConnectInternalAsync(showResultDialog: false);
         }
 
-        MessageText.Text = "规则已保存。";
+        if (reconnected)
+        {
+            await ShowSuccessAsync(
+                L10n.T("规则已保存。", "Rules saved."));
+        }
+        else
+        {
+            await ShowWarningAsync(
+                L10n.T(
+                    "规则已保存，但连接未能重新建立，请手动连接。",
+                    "Rules were saved, but the connection could not be re-established. Connect manually."));
+        }
     }
 
     private async void Refresh_Click(
@@ -490,4 +755,207 @@ public partial class MainWindow : Window
         object? sender,
         RoutedEventArgs e) =>
         await ExitAsync();
+
+    private async void ThemeMode_SelectionChanged(
+        object? sender,
+        SelectionChangedEventArgs e)
+    {
+        if (_loadingPreferences
+            || ThemeModeBox.SelectedItem is not ComboBoxItem item)
+            return;
+
+        var mode = item.Tag?.ToString() ?? "system";
+        _settings.ThemeMode = mode;
+        ApplyTheme(mode);
+        await _settingsStore.SaveAsync(_settings);
+    }
+
+    private async void GlobalMode_Click(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (_loadingPreferences) return;
+
+        try
+        {
+            _settings.GlobalMode = GlobalModeCheckBox.IsChecked == true;
+            await _settingsStore.SaveAsync(_settings);
+
+            var modeMessage = _settings.GlobalMode
+                ? L10n.T(
+                    "已启用全局模式；局域网和 VPS 地址仍保持直连。",
+                    "Global mode enabled. LAN and VPS addresses remain direct.")
+                : L10n.T(
+                    "已启用规则模式。",
+                    "Rule-based mode enabled.");
+
+            if (_singBoxManager!.IsRunning(_settings))
+            {
+                if (!await StopInternalAsync(showResultDialog: false)) return;
+                var connected = await ConnectInternalAsync(
+                    showResultDialog: false);
+
+                if (connected)
+                {
+                    await ShowSuccessAsync(
+                        modeMessage + L10n.T(
+                            "连接已重新建立。",
+                            " The connection has been re-established."));
+                }
+                else
+                {
+                    await ShowWarningAsync(
+                        modeMessage + L10n.T(
+                            "连接未能重新建立，请手动连接。",
+                            " The connection could not be re-established. Connect manually."));
+                }
+            }
+            else
+            {
+                await ShowInfoAsync(modeMessage);
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorAsync(
+                L10n.T(
+                    "路由模式切换失败：",
+                    "Failed to change routing mode: ")
+                + ex.Message);
+        }
+    }
+
+    private async void AutoStart_Click(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (_loadingPreferences) return;
+
+        var enabled = AutoStartCheckBox.IsChecked == true;
+        AutoStartCheckBox.IsEnabled = false;
+        try
+        {
+            await _startupRegistration.SetEnabledAsync(enabled);
+            _settings.AutoStart = enabled;
+            await _settingsStore.SaveAsync(_settings);
+            await ShowInfoAsync(
+                enabled
+                    ? L10n.T(
+                        "已启用开机启动。登录后将延迟约 60 秒启动 S2N。",
+                        "Startup enabled. S2N will start about 60 seconds after sign-in.")
+                    : L10n.T(
+                        "已关闭开机启动。",
+                        "Startup disabled."));
+        }
+        catch (Exception ex)
+        {
+            _loadingPreferences = true;
+            AutoStartCheckBox.IsChecked = !enabled;
+            _loadingPreferences = false;
+            await ShowErrorAsync(
+                L10n.T("开机启动设置失败：", "Failed to update startup: ")
+                + ex.Message);
+        }
+        finally
+        {
+            AutoStartCheckBox.IsEnabled = true;
+        }
+    }
+
+    private async void AutoConnect_Click(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        if (_loadingPreferences) return;
+
+        if (!_settings.HasSuccessfulConnection)
+        {
+            _loadingPreferences = true;
+            AutoConnectCheckBox.IsChecked = false;
+            _loadingPreferences = false;
+            await ShowWarningAsync(
+                L10n.T(
+                    "请先手动连接成功一次，再启用自动连接。",
+                    "Connect successfully once before enabling auto-connect."));
+            return;
+        }
+
+        _settings.AutoConnect = AutoConnectCheckBox.IsChecked == true;
+        await _settingsStore.SaveAsync(_settings);
+        await ShowInfoAsync(
+            _settings.AutoConnect
+                ? L10n.T(
+                    "已启用自动连接。程序启动后会等待网络和必要组件就绪，再自动连接。",
+                    "Auto-connect enabled. After launch, S2N waits for the network and required components before connecting.")
+                : L10n.T(
+                    "已关闭自动连接。",
+                    "Auto-connect disabled."));
+    }
+
+
+    private Task ShowInfoAsync(string message) =>
+        ShowMessageAsync(
+            L10n.T("提示", "Information"),
+            message,
+            MessageDialogKind.Information);
+
+    private Task ShowSuccessAsync(string message) =>
+        ShowMessageAsync(
+            L10n.T("成功", "Success"),
+            message,
+            MessageDialogKind.Success);
+
+    private Task ShowWarningAsync(string message) =>
+        ShowMessageAsync(
+            L10n.T("注意", "Warning"),
+            message,
+            MessageDialogKind.Warning);
+
+    private Task ShowErrorAsync(string message) =>
+        ShowMessageAsync(
+            L10n.T("错误", "Error"),
+            message,
+            MessageDialogKind.Error);
+
+    private async Task ShowMessageAsync(
+        string title,
+        string message,
+        MessageDialogKind kind)
+    {
+        if (!IsVisible)
+            Show();
+
+        if (WindowState == WindowState.Minimized)
+            WindowState = WindowState.Normal;
+
+        Activate();
+
+        var dialog = new MessageDialog(
+            title,
+            L10n.TranslateTechnicalMessage(message),
+            kind);
+        await dialog.ShowDialog(this);
+    }
+
+    private static void ApplyTheme(string mode)
+    {
+        if (Application.Current is null) return;
+
+        Application.Current.RequestedThemeVariant = mode switch
+        {
+            "light" => ThemeVariant.Light,
+            "dark" => ThemeVariant.Dark,
+            _ => ThemeVariant.Default
+        };
+    }
+
+    private void SelectThemeMode(string mode)
+    {
+        ThemeModeBox.SelectedIndex = mode switch
+        {
+            "light" => 1,
+            "dark" => 2,
+            _ => 0
+        };
+    }
 }

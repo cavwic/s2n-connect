@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.2.2-alpha.1
+
+### Added
+
+- Chinese UI on Chinese systems and English UI on all other systems.
+- System, light, and dark theme modes with immediate switching and persisted settings.
+- Global routing mode for all public Internet traffic while keeping LAN/private networks and the VPS address direct.
+- Cross-platform start-at-sign-in registration with an approximately 60-second delay.
+- Auto-connect, unlocked only after one verified successful connection, with network, DNS, VPS-port, and sing-box readiness checks.
+
+### Changed
+
+- Main-window spacing and card padding are more compact; the default window is sized to show the full workflow on common desktop displays while retaining scrolling on smaller screens.
+- GitHub Actions use .NET 10 SDK and Node 24-based checkout/setup actions while the application remains a self-contained `net8.0` target.
+- Added public parameterless window constructors for Avalonia runtime XAML loading.
+
+### Fixed
+
+- Fixed compilation against current SharpCompress and Avalonia APIs, including the ambiguous cryptographic exception and asynchronous UI dispatch.
+- Upgraded SSH.NET to 2026.0.0 to resolve the reported high-severity dependency advisories.
+- Windows can discover and stop its elevated sing-box process. Stop failures keep the application open and prevent automatic reconnection until the process is stopped.
+- Empty process or domain rule lists no longer produce unconditional proxy routes.
+- Health checks explicitly use the managed proxy, and connection buttons refresh before external probes complete.
+- Exit explicitly hides and disposes the tray icon to prevent a stale Windows notification-area icon.
+- Release publication waits for all six platform packages, verifies every checksum, and labels alpha tags as prereleases. CodeQL and provenance availability are reported explicitly for private repositories.
+
 ## 0.2.1-alpha.1
 
 ### Changed

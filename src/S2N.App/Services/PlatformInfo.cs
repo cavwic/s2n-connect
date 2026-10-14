@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using S2N.Localization;
 
 namespace S2N.Services;
 
@@ -8,7 +9,8 @@ public static class PlatformInfo
         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "windows" :
         RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "darwin" :
         RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
-        throw new PlatformNotSupportedException("Unsupported operating system.");
+        throw new PlatformNotSupportedException(
+            L10n.T("不支持当前操作系统。", "Unsupported operating system."));
 
     public static string ArchitectureToken => RuntimeInformation.OSArchitecture switch
     {
@@ -17,7 +19,9 @@ public static class PlatformInfo
         Architecture.X86 => "386",
         Architecture.Arm => "arm",
         _ => throw new PlatformNotSupportedException(
-            $"Unsupported architecture: {RuntimeInformation.OSArchitecture}")
+            L10n.T(
+                $"不支持的处理器架构：{RuntimeInformation.OSArchitecture}",
+                $"Unsupported architecture: {RuntimeInformation.OSArchitecture}"))
     };
 
     public static string ExecutableName =>

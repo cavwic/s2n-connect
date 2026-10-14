@@ -1,5 +1,6 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
+using S2N.Localization;
 
 namespace S2N.Services;
 
@@ -37,7 +38,8 @@ public sealed class GitHubReleaseClient
 
         var root = doc.RootElement;
         var tag = root.GetProperty("tag_name").GetString()
-                  ?? throw new InvalidOperationException("Missing release tag.");
+                  ?? throw new InvalidOperationException(
+                       L10n.T("缺少发布标签。", "Missing release tag."));
         var version = tag.TrimStart('v');
 
         string os = PlatformInfo.OsToken;
@@ -77,11 +79,15 @@ public sealed class GitHubReleaseClient
 
         if (packageName is null || packageUrl is null)
             throw new PlatformNotSupportedException(
-                $"No official sing-box asset found for {os}/{arch}.");
+                L10n.T(
+                    $"未找到适用于 {os}/{arch} 的官方 sing-box 安装包。",
+                    $"No official sing-box asset was found for {os}/{arch}."));
 
         if (checksumName is null || checksumUrl is null)
             throw new InvalidOperationException(
-                "The release does not contain a checksum file.");
+                L10n.T(
+                    "该发布版本不包含校验和文件。",
+                    "The release does not contain a checksum file."));
 
         return new SingBoxReleaseAsset(
             version,

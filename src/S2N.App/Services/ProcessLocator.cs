@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.Win32.SafeHandles;
 
 namespace S2N.Services;
 
@@ -55,7 +58,7 @@ public static class ProcessLocator
                 : StringComparer.Ordinal).ToArray();
     }
 
-    private static string? TryGetExecutablePath(Process process)
+    internal static string? TryGetExecutablePath(Process process)
     {
         if (PlatformInfo.IsLinux)
         {
@@ -70,7 +73,18 @@ public static class ProcessLocator
 
         if (PlatformInfo.IsWindows)
         {
-            try { return process.MainModule?.FileName; }
+            try
+            {
+                // Limited query access also works for an elevated sing-box
+                // launched by the normal, non-elevated desktop application.
+                using var handle = OpenProcess(0x1000, false, process.Id);
+                if (handle.IsInvalid) return null;
+                var path = new StringBuilder(32768);
+                var size = path.Capacity;
+                return QueryFullProcessImageName(handle, 0, path, ref size)
+                    ? path.ToString()
+                    : null;
+            }
             catch { return null; }
         }
 
@@ -89,4 +103,19 @@ public static class ProcessLocator
 
         return null;
     }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern SafeProcessHandle OpenProcess(
+        uint desiredAccess,
+        [MarshalAs(UnmanagedType.Bool)] bool inheritHandle,
+        int processId);
+
+    [DllImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW",
+        CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool QueryFullProcessImageName(
+        SafeProcessHandle process,
+        uint flags,
+        StringBuilder path,
+        ref int size);
 }

@@ -3,11 +3,15 @@ using System.Net.Http.Headers;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
+using S2N.Localization;
 
 namespace S2N.Services;
 
 public sealed class NetworkProbeService
 {
+    public bool IsNetworkAvailable() =>
+        NetworkInterface.GetIsNetworkAvailable();
+
     private static readonly Uri IpIpUri = new("https://myip.ipip.net/");
     private static readonly Uri CloudflareTraceUri =
         new("https://www.cloudflare.com/cdn-cgi/trace");
@@ -30,11 +34,11 @@ public sealed class NetworkProbeService
             var text = (await client.GetStringAsync(
                 IpIpUri,
                 cancellationToken)).Trim();
-            return string.IsNullOrWhiteSpace(text) ? "获取失败" : text;
+            return string.IsNullOrWhiteSpace(text) ? L10n.T("获取失败", "Failed to retrieve") : text;
         }
         catch
         {
-            return "获取失败";
+            return L10n.T("获取失败", "Failed to retrieve");
         }
     }
 
@@ -53,7 +57,7 @@ public sealed class NetworkProbeService
             Timeout = ManagedRequestTimeout
         };
         client.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("S2N-Connect", "0.2.1"));
+            new ProductInfoHeaderValue("S2N-Connect", "0.2.2"));
 
         // Google is the authoritative connectivity test requested by the UI.
         // Any successful HTTP response proves that the managed proxy path works.
@@ -65,11 +69,11 @@ public sealed class NetworkProbeService
                 cancellationToken);
 
             if (!response.IsSuccessStatusCode)
-                return (false, "未连接");
+                return (false, L10n.T("未连接", "Disconnected"));
         }
         catch
         {
-            return (false, "未连接");
+            return (false, L10n.T("未连接", "Disconnected"));
         }
 
         // Connectivity is already confirmed. Exit IP lookup is best-effort and
@@ -89,7 +93,9 @@ public sealed class NetworkProbeService
         }
         catch { }
 
-        return (true, "已连接，出口 IP 检测失败");
+        return (true, L10n.T(
+            "已连接，出口 IP 检测失败",
+            "Connected; exit IP check failed"));
     }
 
     public async Task<bool> IsTcpPortOpenAsync(
@@ -135,7 +141,7 @@ public sealed class NetworkProbeService
             Timeout = TimeSpan.FromSeconds(timeoutSeconds)
         };
         client.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("S2N-Connect", "0.2.1"));
+            new ProductInfoHeaderValue("S2N-Connect", "0.2.2"));
         return client;
     }
 

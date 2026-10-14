@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.ComponentModel;
+using S2N.Localization;
 
 namespace S2N.Services;
 
@@ -27,7 +29,7 @@ public sealed class PrivilegeLauncher
 
             var process = Process.Start(psi)
                 ?? throw new InvalidOperationException(
-                    "Failed to start sing-box.");
+                    L10n.T("无法启动 sing-box。", "Failed to start sing-box."));
             await File.WriteAllTextAsync(
                 _pidPath,
                 process.Id.ToString(),
@@ -76,7 +78,7 @@ public sealed class PrivilegeLauncher
 
             var process = Process.Start(psi)
                 ?? throw new InvalidOperationException(
-                    "Failed to start pkexec.");
+                    L10n.T("无法启动 pkexec。", "Failed to start pkexec."));
             await File.WriteAllTextAsync(
                 _pidPath,
                 process.Id.ToString(),
@@ -105,14 +107,8 @@ public sealed class PrivilegeLauncher
         if (PlatformInfo.IsWindows)
         {
             foreach (var pid in pids)
-            {
-                try
-                {
-                    using var process = Process.GetProcessById(pid);
-                    process.Kill(entireProcessTree: true);
-                }
-                catch { }
-            }
+                await StopWindowsProcessAsync(
+                    pid, executablePath, cancellationToken);
         }
         else if (PlatformInfo.IsMacOS)
         {
@@ -145,6 +141,88 @@ public sealed class PrivilegeLauncher
         }
 
         try { File.Delete(_pidPath); } catch { }
+    }
+
+    private static async Task StopWindowsProcessAsync(
+        int pid,
+        string executablePath,
+        CancellationToken cancellationToken)
+    {
+        Process process;
+        try { process = Process.GetProcessById(pid); }
+        catch (ArgumentException) { return; }
+
+        using (process)
+        {
+            if (process.HasExited) return;
+
+            var actualPath = ProcessLocator.TryGetExecutablePath(process);
+            if (actualPath is null)
+            {
+                if (process.HasExited) return;
+                throw new InvalidOperationException(
+                    L10n.T(
+                        "无法核验 sing-box 进程路径，未执行停止。",
+                        "Unable to verify the sing-box process path; the process was not stopped."));
+            }
+
+            // A saved PID can be reused after sing-box exits. Never elevate
+            // a termination request for a different executable.
+            if (!string.Equals(
+                    Path.GetFullPath(actualPath),
+                    Path.GetFullPath(executablePath),
+                    StringComparison.OrdinalIgnoreCase))
+                return;
+
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(
+                cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromSeconds(15));
+
+            try
+            {
+                try { process.Kill(entireProcessTree: true); }
+                catch (Win32Exception ex) when (ex.NativeErrorCode == 5)
+                {
+                    var start = new ProcessStartInfo
+                    {
+                        FileName = Path.Combine(
+                            Environment.SystemDirectory, "taskkill.exe"),
+                        UseShellExecute = true,
+                        Verb = "runas",
+                        WindowStyle = ProcessWindowStyle.Hidden
+                    };
+                    start.ArgumentList.Add("/PID");
+                    start.ArgumentList.Add(pid.ToString());
+                    start.ArgumentList.Add("/T");
+                    start.ArgumentList.Add("/F");
+
+                    using var terminator = Process.Start(start)
+                        ?? throw new InvalidOperationException(
+                            L10n.T(
+                                "无法启动管理员停止操作。",
+                                "Failed to start the administrator stop operation."));
+                    await terminator.WaitForExitAsync(timeout.Token);
+                    if (terminator.ExitCode != 0 && !process.HasExited)
+                        throw new InvalidOperationException(
+                            L10n.T(
+                                "管理员停止操作失败，sing-box 仍在运行。",
+                                "The administrator stop operation failed; sing-box is still running."));
+                }
+                catch (InvalidOperationException) when (process.HasExited)
+                {
+                    return;
+                }
+
+                await process.WaitForExitAsync(timeout.Token);
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                throw new InvalidOperationException(
+                    L10n.T(
+                        "停止 sing-box 超时，请重试。",
+                        "Stopping sing-box timed out. Try again."));
+            }
+        }
     }
 
     private static string Quote(string value) =>

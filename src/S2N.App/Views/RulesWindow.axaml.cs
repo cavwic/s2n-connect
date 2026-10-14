@@ -1,10 +1,15 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using S2N.Localization;
 
 namespace S2N.Views;
 
 public partial class RulesWindow : Window
 {
+    public RulesWindow() : this([], [])
+    {
+    }
+
     public List<string> ProcessNames { get; private set; }
     public List<string> DomainSuffixes { get; private set; }
 
@@ -13,6 +18,7 @@ public partial class RulesWindow : Window
         IEnumerable<string> domains)
     {
         InitializeComponent();
+        L10n.Apply(this);
         ProcessNames = processes.ToList();
         DomainSuffixes = domains.ToList();
         ProcessesBox.Text = string.Join(

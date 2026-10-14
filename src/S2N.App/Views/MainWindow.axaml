@@ -2,22 +2,24 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="S2N.Views.MainWindow"
         Title="S2N Connect"
-        Width="900"
-        Height="720"
-        MinWidth="820"
-        MinHeight="650"
+        Width="1020"
+        Height="860"
+        MinWidth="900"
+        MinHeight="700"
         WindowStartupLocation="CenterScreen">
-  <ScrollViewer>
-    <StackPanel Margin="24" Spacing="16">
-      <StackPanel>
-        <TextBlock Text="S2N" FontSize="30" FontWeight="SemiBold"/>
+  <ScrollViewer VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Margin="18" Spacing="10">
+      <StackPanel Spacing="2">
+        <TextBlock Text="S2N" FontSize="28" FontWeight="SemiBold"/>
         <TextBlock Text="自建 VPS 与 sing-box 跨平台管理工具"
                    Opacity="0.68"/>
       </StackPanel>
 
       <Border Classes="card">
-        <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
-              RowSpacing="10">
+        <Grid ColumnDefinitions="170,*"
+              RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+              RowSpacing="7">
           <TextBlock Grid.Row="0" Text="本地 IP 及位置"/>
           <TextBlock Grid.Row="0" Grid.Column="1" x:Name="LocalIpText"
                      Text="获取中" TextWrapping="Wrap"/>
@@ -37,46 +39,51 @@
       </Border>
 
       <Border Classes="card">
-        <StackPanel Spacing="12">
-          <TextBlock Text="部署" FontSize="20" FontWeight="SemiBold"/>
-          <Grid ColumnDefinitions="140,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
-                RowSpacing="10" ColumnSpacing="10">
+        <StackPanel Spacing="8">
+          <TextBlock Text="部署" FontSize="19" FontWeight="SemiBold"/>
+          <Grid ColumnDefinitions="135,*,Auto"
+                RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                RowSpacing="7" ColumnSpacing="8">
             <TextBlock Grid.Row="0" Text="VPS 地址" VerticalAlignment="Center"/>
             <TextBox Grid.Row="0" Grid.Column="1" x:Name="VpsHostBox"
-                     Watermark="例如 203.0.113.10"/>
+                     PlaceholderText="例如 203.0.113.10"/>
             <Button Grid.Row="0" Grid.Column="2" x:Name="TestVpsButton"
                     Content="测试 VPS" Click="TestVps_Click"/>
 
             <TextBlock Grid.Row="1" Text="SSH 用户 / 端口" VerticalAlignment="Center"/>
             <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,120" ColumnSpacing="8">
-              <TextBox x:Name="VpsUserBox" Watermark="root"/>
-              <NumericUpDown Grid.Column="1" x:Name="VpsPortBox"
-                             Minimum="1" Maximum="65535" Value="22"/>
+              <TextBox x:Name="VpsUserBox" PlaceholderText="root"/>
+              <TextBox Grid.Column="1"
+         x:Name="VpsPortBox"
+         Text="22"
+         MaxLength="5"
+         HorizontalContentAlignment="Center"
+         PlaceholderText="22"/>
             </Grid>
 
             <TextBlock Grid.Row="2" Text="SSH 私钥" VerticalAlignment="Center"/>
             <TextBox Grid.Row="2" Grid.Column="1" x:Name="SshKeyBox"
-                     IsReadOnly="True" Watermark="连接成功后才保存路径"/>
+                     IsReadOnly="True" PlaceholderText="连接成功后才保存路径"/>
             <Button Grid.Row="2" Grid.Column="2" Content="选择私钥"
                     Click="ChooseSshKey_Click"/>
 
             <TextBlock Grid.Row="3" Text="私钥口令" VerticalAlignment="Center"/>
             <TextBox Grid.Row="3" Grid.Column="1" x:Name="KeyPassphraseBox"
-                     PasswordChar="●" Watermark="仅本次使用，不保存"/>
+                     PasswordChar="●" PlaceholderText="仅本次使用，不保存"/>
 
             <TextBlock Grid.Row="4" Text="sing-box 路径" VerticalAlignment="Center"/>
             <TextBox Grid.Row="4" Grid.Column="1" x:Name="SingBoxPathBox"
-                     IsReadOnly="True" Watermark="用户选择安装目录"/>
+                     IsReadOnly="True" PlaceholderText="用户选择安装目录"/>
             <Button Grid.Row="4" Grid.Column="2" Content="选择并安装"
                     Click="InstallSingBox_Click"/>
 
             <TextBlock Grid.Row="5" Text="部署操作" VerticalAlignment="Center"/>
             <StackPanel Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2"
-                        Orientation="Horizontal" Spacing="10">
+                        Orientation="Horizontal" Spacing="8">
               <Button Classes="primary" Content="一键部署"
                       Click="OneClickDeploy_Click"/>
               <Button Content="仅部署 VPS" Click="DeployVps_Click"/>
-              <ProgressBar x:Name="ProgressBar" Width="220"
+              <ProgressBar x:Name="ProgressBar" Width="210"
                            Minimum="0" Maximum="100" IsVisible="False"/>
             </StackPanel>
           </Grid>
@@ -84,9 +91,35 @@
       </Border>
 
       <Border Classes="card">
-        <StackPanel Spacing="12">
-          <TextBlock Text="使用" FontSize="20" FontWeight="SemiBold"/>
-          <StackPanel Orientation="Horizontal" Spacing="10">
+        <StackPanel Spacing="8">
+          <TextBlock Text="偏好设置" FontSize="19" FontWeight="SemiBold"/>
+          <Grid ColumnDefinitions="Auto,180,*,*,*" ColumnSpacing="14">
+            <TextBlock Text="主题" VerticalAlignment="Center"/>
+            <ComboBox Grid.Column="1" x:Name="ThemeModeBox"
+                      SelectionChanged="ThemeMode_SelectionChanged">
+              <ComboBoxItem Tag="system" Content="跟随系统"/>
+              <ComboBoxItem Tag="light" Content="浅色"/>
+              <ComboBoxItem Tag="dark" Content="深色"/>
+            </ComboBox>
+            <CheckBox Grid.Column="2" x:Name="GlobalModeCheckBox"
+                      Content="全局模式" VerticalAlignment="Center"
+                      Click="GlobalMode_Click"/>
+            <CheckBox Grid.Column="3" x:Name="AutoStartCheckBox"
+                      Content="开机启动" VerticalAlignment="Center"
+                      Click="AutoStart_Click"/>
+            <CheckBox Grid.Column="4" x:Name="AutoConnectCheckBox"
+                      Content="自动连接" VerticalAlignment="Center"
+                      Click="AutoConnect_Click"/>
+          </Grid>
+          <TextBlock Text="全局模式仅代理公网流量，局域网与 VPS 地址保持直连。自动连接需先手动连接成功一次。"
+                     Opacity="0.65" FontSize="12" TextWrapping="Wrap"/>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="8">
+          <TextBlock Text="使用" FontSize="19" FontWeight="SemiBold"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
             <Button Classes="primary" x:Name="ConnectButton"
                     Content="连接" Click="Connect_Click"/>
             <Button x:Name="StopButton" Content="停止"
@@ -97,9 +130,6 @@
           </StackPanel>
         </StackPanel>
       </Border>
-
-      <TextBlock x:Name="MessageText" TextWrapping="Wrap"
-                 Foreground="#C24545"/>
     </StackPanel>
   </ScrollViewer>
 </Window>

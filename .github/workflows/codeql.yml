@@ -6,23 +6,69 @@ on:
   pull_request:
   schedule:
     - cron: "23 4 * * 1"
+  workflow_dispatch:
 
 permissions:
-  security-events: write
-  packages: read
   contents: read
 
 jobs:
-  analyze:
+  preflight:
+    name: Check code scanning availability
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: read
+    outputs:
+      available: ${{ steps.check.outputs.available }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - name: Check repository capability
+        id: check
+        uses: actions/github-script@v9
+        with:
+          script: |
+            let available = false;
+            let reason;
+            try {
+              await github.request('GET /repos/{owner}/{repo}/code-scanning/analyses', {
+                ...context.repo,
+                per_page: 1
+              });
+              available = true;
+              reason = 'Code scanning API is available; the analysis job will run.';
+            } catch (error) {
+              if (![403, 404].includes(error.status)) throw error;
+              reason = `Code scanning API returned HTTP ${error.status}. ` +
+                'Scanning is not enabled, the repository plan does not include it, or this event token cannot access it. ' +
+                'No CodeQL analysis was performed. Enable code scanning with a supported plan and rerun this workflow.';
+              core.warning(reason);
+            }
+            core.setOutput('available', String(available));
+            await core.summary
+              .addHeading(available ? 'CodeQL capability check' : 'CodeQL skipped — no scan performed')
+              .addRaw(reason)
+              .write();
+
+  analyze:
+    name: Analyze C# with CodeQL
+    needs: preflight
+    if: needs.preflight.outputs.available == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      security-events: write
+      packages: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - uses: github/codeql-action/init@v4
         with:
           languages: csharp
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: 8.0.x
+          build-mode: manual
       - run: dotnet restore
-      - run: dotnet build -c Release --no-restore
-      - uses: github/codeql-action/analyze@v3
+      - run: dotnet build --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
+      - uses: github/codeql-action/analyze@v4
+        with:
+          category: /language:csharp

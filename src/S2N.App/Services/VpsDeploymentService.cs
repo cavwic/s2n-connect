@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using S2N.Localization;
 using S2N.Models;
 
 namespace S2N.Services;
@@ -24,7 +25,7 @@ public sealed class VpsDeploymentService
     {
         if (string.IsNullOrWhiteSpace(settings.SshKeyPath))
             throw new InvalidOperationException(
-                "SSH key has not been validated.");
+                L10n.T("SSH 私钥尚未验证。", "SSH key has not been validated."));
 
         var encoded = Convert.ToBase64String(
             Encoding.UTF8.GetBytes(BuildRemoteScript()));
@@ -41,7 +42,7 @@ public sealed class VpsDeploymentService
         var line = output.Split('\n')
             .LastOrDefault(x => x.StartsWith(marker, StringComparison.Ordinal))
             ?? throw new InvalidOperationException(
-                "The VPS deployment did not return a profile.");
+                L10n.T("VPS 部署未返回配置文件。", "The VPS deployment did not return a profile."));
 
         var profile = JsonSerializer.Deserialize<VpsProfile>(
             line[marker.Length..].Trim(),
@@ -50,7 +51,7 @@ public sealed class VpsDeploymentService
                 PropertyNameCaseInsensitive = true
             })
             ?? throw new InvalidOperationException(
-                "Invalid VPS profile returned.");
+                L10n.T("VPS 返回了无效的配置文件。", "Invalid VPS profile returned."));
 
         profile.UpdatedAt = DateTimeOffset.UtcNow;
         await _settingsStore.SaveVpsProfileAsync(

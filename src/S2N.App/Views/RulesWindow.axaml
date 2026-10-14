@@ -16,8 +16,8 @@
                      TextWrapping="Wrap"/>
           <TextBox Grid.Row="2" x:Name="ProcessesBox"
                    AcceptsReturn="True" TextWrapping="NoWrap"
-                   VerticalScrollBarVisibility="Auto"
-                   HorizontalScrollBarVisibility="Auto"/>
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
         </Grid>
       </Border>
       <Border Grid.Column="1" Classes="card">
@@ -29,8 +29,8 @@
                      TextWrapping="Wrap"/>
           <TextBox Grid.Row="2" x:Name="DomainsBox"
                    AcceptsReturn="True" TextWrapping="NoWrap"
-                   VerticalScrollBarVisibility="Auto"
-                   HorizontalScrollBarVisibility="Auto"/>
+                   ScrollViewer.VerticalScrollBarVisibility="Auto"
+                   ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
         </Grid>
       </Border>
     </Grid>

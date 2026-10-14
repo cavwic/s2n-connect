@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
+using S2N.Localization;
 using S2N.Views;
 
 namespace S2N;
@@ -21,12 +22,13 @@ public partial class App : Application
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
             _mainWindow = new MainWindow();
             desktop.MainWindow = _mainWindow;
+            desktop.Exit += (_, _) => DisposeTrayIcon();
 
             var menu = new NativeMenu();
-            var show = new NativeMenuItem("显示");
-            var connect = new NativeMenuItem("连接");
-            var stop = new NativeMenuItem("停止");
-            var exit = new NativeMenuItem("退出");
+            var show = new NativeMenuItem(L10n.T("显示", "Show"));
+            var connect = new NativeMenuItem(L10n.T("连接", "Connect"));
+            var stop = new NativeMenuItem(L10n.T("停止", "Stop"));
+            var exit = new NativeMenuItem(L10n.T("退出", "Exit"));
 
             show.Click += (_, _) => ShowMainWindow();
             connect.Click += async (_, _) =>
@@ -70,6 +72,14 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    public void DisposeTrayIcon()
+    {
+        if (_trayIcon is null) return;
+        _trayIcon.IsVisible = false;
+        _trayIcon.Dispose();
+        _trayIcon = null;
     }
 
     private void ShowMainWindow()

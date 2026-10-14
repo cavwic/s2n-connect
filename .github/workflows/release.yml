@@ -3,15 +3,50 @@ name: release
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 permissions:
-  contents: write
-  id-token: write
-  attestations: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
 
 jobs:
-  release:
+  validate:
+    name: Validate release version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - name: Match tag to application version
+        uses: actions/github-script@v9
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        with:
+          script: |
+            const fs = require('node:fs');
+            const tag = process.env.RELEASE_TAG;
+            if (!/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(tag)) {
+              throw new Error(`Invalid release tag: ${tag}`);
+            }
+            const project = fs.readFileSync('src/S2N.App/S2N.App.csproj', 'utf8');
+            const version = project.match(/<Version>([^<]+)<\/Version>/)?.[1];
+            if (tag !== `v${version}`) {
+              throw new Error(`Tag ${tag} does not match application version ${version}.`);
+            }
+      - name: Check routing and settings regressions
+        run: dotnet run --project tests/S2N.ConfigChecks/S2N.ConfigChecks.csproj --configuration Release
+
+  build:
+    name: Package ${{ matrix.rid }}
+    needs: validate
     strategy:
       fail-fast: false
       matrix:
@@ -36,43 +71,201 @@ jobs:
             archive: tar
 
     runs-on: ${{ matrix.runner }}
-
+    timeout-minutes: 30
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+      RELEASE_RID: ${{ matrix.rid }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 8.0.x
-      - run: dotnet restore
-      - run: >
+          dotnet-version: 10.0.x
+      - name: Restore target runtime
+        run: dotnet restore src/S2N.App/S2N.App.csproj --runtime ${{ matrix.rid }}
+      - name: Publish self-contained application
+        run: >-
           dotnet publish src/S2N.App/S2N.App.csproj
-          -c Release
-          -r ${{ matrix.rid }}
+          --configuration Release
+          --runtime ${{ matrix.rid }}
           --self-contained true
-          -o artifacts/${{ matrix.rid }}
+          --no-restore
+          -p:ContinuousIntegrationBuild=true
+          --output artifacts/${{ matrix.rid }}
 
       - name: Archive and checksum on Windows
         if: matrix.archive == 'zip'
         shell: pwsh
         run: |
-          $name = "S2N-${{ github.ref_name }}-${{ matrix.rid }}.zip"
-          Compress-Archive -Path "artifacts/${{ matrix.rid }}/*" -DestinationPath $name
-          $hash = (Get-FileHash $name -Algorithm SHA256).Hash.ToLower()
-          "$hash  $name" | Set-Content "$name.sha256"
+          $name = "S2N-$env:RELEASE_TAG-$env:RELEASE_RID.zip"
+          Compress-Archive -Path "artifacts/$env:RELEASE_RID/*" -DestinationPath $name
+          $hash = (Get-FileHash -LiteralPath $name -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  $name" | Set-Content -LiteralPath "$name.sha256" -Encoding utf8NoBOM
 
       - name: Archive and checksum on Unix
         if: matrix.archive == 'tar'
         shell: bash
         run: |
-          name="S2N-${{ github.ref_name }}-${{ matrix.rid }}.tar.gz"
-          tar -C "artifacts/${{ matrix.rid }}" -czf "$name" .
+          set -euo pipefail
+          name="S2N-${RELEASE_TAG}-${RELEASE_RID}.tar.gz"
+          tar -C "artifacts/${RELEASE_RID}" -czf "$name" .
           shasum -a 256 "$name" > "$name.sha256"
 
-      - name: Attest release archive
-        uses: actions/attest-build-provenance@v2
+      - name: Upload release package
+        uses: actions/upload-artifact@v7
         with:
-          subject-path: S2N-${{ github.ref_name }}-${{ matrix.rid }}.*
+          name: release-${{ matrix.rid }}
+          path: S2N-${{ github.ref_name }}-${{ matrix.rid }}.*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
 
-      - uses: softprops/action-gh-release@v2
+  publish:
+    name: Publish complete release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download all six packages
+        uses: actions/download-artifact@v8
         with:
-          files: |
-            S2N-${{ github.ref_name }}-${{ matrix.rid }}.*
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+
+      - name: Verify package completeness and SHA-256
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs');
+            const crypto = require('node:crypto');
+            const tag = process.env.RELEASE_TAG;
+            const rids = ['win-x64', 'win-arm64', 'osx-x64', 'osx-arm64', 'linux-x64', 'linux-arm64'];
+            const archives = rids.map(rid => `S2N-${tag}-${rid}.${rid.startsWith('win-') ? 'zip' : 'tar.gz'}`);
+            const expected = archives.flatMap(name => [name, `${name}.sha256`]).sort();
+            const actual = fs.readdirSync('dist').sort();
+            if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+              throw new Error(`Incomplete or unexpected release files. Expected ${expected.join(', ')}; found ${actual.join(', ')}.`);
+            }
+            const checksums = [];
+            for (const name of archives) {
+              const hash = crypto.createHash('sha256').update(fs.readFileSync(`dist/${name}`)).digest('hex');
+              const recorded = fs.readFileSync(`dist/${name}.sha256`, 'utf8').trim();
+              if (recorded !== `${hash}  ${name}`) throw new Error(`SHA-256 verification failed for ${name}.`);
+              checksums.push(`${hash}  ${name}`);
+            }
+            fs.writeFileSync('dist/SHA256SUMS.txt', checksums.join('\n') + '\n');
+            await core.summary.addHeading('Release packages verified')
+              .addRaw('All six platform archives and their SHA-256 files are present and verified.').write();
+
+      - name: Check attestation availability
+        id: attestation
+        uses: actions/github-script@v9
+        env:
+          ENABLE_PRIVATE_ATTESTATIONS: ${{ vars.ENABLE_PRIVATE_ATTESTATIONS }}
+        with:
+          script: |
+            // Private/internal attestations require GitHub Enterprise Cloud.
+            // The opt-in records the owner's confirmation of that entitlement.
+            const enabled = !context.payload.repository.private || process.env.ENABLE_PRIVATE_ATTESTATIONS === 'true';
+            core.setOutput('enabled', String(enabled));
+            if (!enabled) {
+              await core.summary.addHeading('Artifact attestation skipped')
+                .addRaw('This repository is private. Artifact attestations require GitHub Enterprise Cloud. ' +
+                  'Set ENABLE_PRIVATE_ATTESTATIONS=true only when the repository has that entitlement. ' +
+                  'No provenance attestation was generated; SHA-256 verification still completed.').write();
+            }
+
+      - name: Attest verified release archives
+        if: steps.attestation.outputs.enabled == 'true'
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/*.zip
+            dist/*.tar.gz
+
+      - name: Upload all assets and publish
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('node:fs');
+            const tag = process.env.RELEASE_TAG;
+            const version = tag.slice(1);
+            const changelog = fs.readFileSync('CHANGELOG.md', 'utf8').replace(/\r\n/g, '\n');
+            const entry = changelog.split(/^## /m).slice(1)
+              .find(section => section.split('\n')[0].trim() === version);
+            if (!entry) throw new Error(`CHANGELOG.md has no section for ${version}.`);
+            const workflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const codeqlUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/workflows/codeql.yml`;
+            const body = `## ${entry.trim()}\n\n## Alpha validation and package notes\n\n` +
+              '- These packages are unsigned; macOS packages are not notarized.\n' +
+              '- Real VPS connections and TUN behavior have not been fully validated on physical Windows, macOS, and Linux systems.\n' +
+              '- CodeQL scanning and provenance attestations depend on the private repository\'s available GitHub features. ' +
+              'Their execution or skip status is recorded in workflow summaries; package checksums are verified separately.\n\n' +
+              `[Release workflow summary](${workflowUrl}) · [CodeQL workflow summaries](${codeqlUrl})`;
+            let release;
+            try {
+              release = (await github.rest.repos.getReleaseByTag({ ...context.repo, tag })).data;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            if (release && !release.draft) {
+              throw new Error(`Release ${tag} is already published. Published assets are not replaced; use a new version tag.`);
+            }
+            if (!release) {
+              release = (await github.rest.repos.createRelease({
+                ...context.repo,
+                tag_name: tag,
+                target_commitish: context.sha,
+                name: `S2N Connect ${tag}`,
+                draft: true,
+                prerelease: tag.includes('-'),
+                body
+              })).data;
+            }
+            // A failed upload leaves a draft. A rerun replaces only that draft's assets.
+            const previous = await github.paginate(github.rest.repos.listReleaseAssets, {
+              ...context.repo, release_id: release.id, per_page: 100
+            });
+            for (const asset of previous) {
+              await github.rest.repos.deleteReleaseAsset({ ...context.repo, asset_id: asset.id });
+            }
+            const names = fs.readdirSync('dist').sort();
+            for (const name of names) {
+              const data = fs.readFileSync(`dist/${name}`);
+              await github.rest.repos.uploadReleaseAsset({
+                ...context.repo,
+                release_id: release.id,
+                name,
+                data,
+                headers: {
+                  'content-type': name.endsWith('.zip') ? 'application/zip' : name.endsWith('.tar.gz') ? 'application/gzip' : 'text/plain',
+                  'content-length': data.length
+                }
+              });
+            }
+            const uploaded = await github.paginate(github.rest.repos.listReleaseAssets, {
+              ...context.repo, release_id: release.id, per_page: 100
+            });
+            if (uploaded.length !== names.length || uploaded.some(asset =>
+              !names.includes(asset.name) || asset.size !== fs.statSync(`dist/${asset.name}`).size)) {
+              throw new Error('Uploaded release assets do not match the verified local files. The release remains a draft.');
+            }
+            const published = (await github.rest.repos.updateRelease({
+              ...context.repo,
+              release_id: release.id,
+              draft: false,
+              prerelease: tag.includes('-'),
+              body,
+              make_latest: tag.includes('-') ? 'false' : 'true'
+            })).data;
+            await core.summary.addHeading('Release published')
+              .addLink(published.name, published.html_url)
+              .addRaw(`\n\n${names.length} verified assets published after all six builds succeeded.`).write();

@@ -4,11 +4,31 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: 'true'
+
 jobs:
+  regression-checks:
+    name: Check routing and settings regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet run --project tests/S2N.ConfigChecks/S2N.ConfigChecks.csproj --configuration Release
+
   build:
     strategy:
       fail-fast: false
@@ -34,19 +54,24 @@ jobs:
             archive: tar
 
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 8.0.x
-      - run: dotnet restore
-      - run: >
+          dotnet-version: 10.0.x
+      - name: Restore target runtime
+        run: dotnet restore src/S2N.App/S2N.App.csproj --runtime ${{ matrix.rid }}
+      - name: Publish self-contained application
+        run: >-
           dotnet publish src/S2N.App/S2N.App.csproj
-          -c Release
-          -r ${{ matrix.rid }}
+          --configuration Release
+          --runtime ${{ matrix.rid }}
           --self-contained true
-          -o artifacts/${{ matrix.rid }}
+          --no-restore
+          -p:ContinuousIntegrationBuild=true
+          --output artifacts/${{ matrix.rid }}
 
       - name: Archive Windows
         if: matrix.archive == 'zip'
@@ -58,7 +83,10 @@ jobs:
         shell: bash
         run: tar -C "artifacts/${{ matrix.rid }}" -czf "S2N-${{ matrix.rid }}.tar.gz" .
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: S2N-${{ matrix.rid }}
           path: S2N-${{ matrix.rid }}.*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14

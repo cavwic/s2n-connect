@@ -15,22 +15,14 @@ public sealed class SettingsStore
     {
         if (!File.Exists(AppPaths.SettingsPath))
         {
-            return new AppSettings
-            {
-                ManagedConfigPath = AppPaths.ManagedConfigPath,
-                VpsProfilePath = AppPaths.VpsProfilePath
-            };
+            return CreateDefaults();
         }
 
         await using var stream = File.OpenRead(AppPaths.SettingsPath);
         var settings = await JsonSerializer.DeserializeAsync<AppSettings>(
-            stream, Options, cancellationToken) ?? new AppSettings();
+            stream, Options, cancellationToken) ?? CreateDefaults();
 
-        if (string.IsNullOrWhiteSpace(settings.ManagedConfigPath))
-            settings.ManagedConfigPath = AppPaths.ManagedConfigPath;
-        if (string.IsNullOrWhiteSpace(settings.VpsProfilePath))
-            settings.VpsProfilePath = AppPaths.VpsProfilePath;
-
+        Normalize(settings);
         return settings;
     }
 
@@ -38,6 +30,7 @@ public sealed class SettingsStore
         AppSettings settings,
         CancellationToken cancellationToken = default)
     {
+        Normalize(settings);
         Directory.CreateDirectory(AppPaths.DataDirectory);
         var temp = AppPaths.SettingsPath + ".tmp";
         await using (var stream = File.Create(temp))
@@ -68,5 +61,35 @@ public sealed class SettingsStore
         await using var stream = File.Create(path);
         await JsonSerializer.SerializeAsync(
             stream, profile, Options, cancellationToken);
+    }
+
+    private static AppSettings CreateDefaults() =>
+        new()
+        {
+            ManagedConfigPath = AppPaths.ManagedConfigPath,
+            VpsProfilePath = AppPaths.VpsProfilePath
+        };
+
+    private static void Normalize(AppSettings settings)
+    {
+        if (string.IsNullOrWhiteSpace(settings.ManagedConfigPath))
+            settings.ManagedConfigPath = AppPaths.ManagedConfigPath;
+        if (string.IsNullOrWhiteSpace(settings.VpsProfilePath))
+            settings.VpsProfilePath = AppPaths.VpsProfilePath;
+
+        settings.ThemeMode = (settings.ThemeMode ?? "").Trim().ToLowerInvariant() switch
+        {
+            "light" => "light",
+            "dark" => "dark",
+            _ => "system"
+        };
+
+        if (!settings.HasSuccessfulConnection)
+            settings.AutoConnect = false;
+
+        settings.ProcessNames ??= [];
+        settings.DomainSuffixes ??= [];
+        settings.KnownHostFingerprints ??=
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 }

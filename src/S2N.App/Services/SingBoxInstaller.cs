@@ -1,7 +1,8 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
-using SharpCompress.Archives;
+using SharpCompress.Readers;
 using SharpCompress.Common;
+using S2N.Localization;
 
 namespace S2N.Services;
 
@@ -16,7 +17,7 @@ public sealed class SingBoxInstaller
     {
         if (string.IsNullOrWhiteSpace(installDirectory))
             throw new ArgumentException(
-                "The installation directory is required.",
+                L10n.T("必须指定安装目录。", "The installation directory is required."),
                 nameof(installDirectory));
 
         Directory.CreateDirectory(installDirectory);
@@ -57,7 +58,7 @@ public sealed class SingBoxInstaller
                     SearchOption.AllDirectories)
                 .FirstOrDefault()
                 ?? throw new FileNotFoundException(
-                    "sing-box executable was not found in the release package.");
+                    L10n.T("发布包中未找到 sing-box 可执行文件。", "sing-box executable was not found in the release package."));
 
             foreach (var file in Directory.EnumerateFiles(
                          Path.GetDirectoryName(executable)!,
@@ -74,7 +75,7 @@ public sealed class SingBoxInstaller
                 installDirectory,
                 PlatformInfo.ExecutableName);
 
-            if (!PlatformInfo.IsWindows)
+            if (!OperatingSystem.IsWindows())
                 File.SetUnixFileMode(
                     installedExecutable,
                     UnixFileMode.UserRead
@@ -100,7 +101,7 @@ public sealed class SingBoxInstaller
     {
         if (!File.Exists(executablePath))
             throw new FileNotFoundException(
-                "sing-box executable does not exist.",
+                L10n.T("sing-box 可执行文件不存在。", "sing-box executable does not exist."),
                 executablePath);
 
         var result = await ProcessRunner.RunAsync(
@@ -114,7 +115,7 @@ public sealed class SingBoxInstaller
                 StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
-                "Downloaded sing-box failed validation: "
+                L10n.T("下载的 sing-box 验证失败：", "Downloaded sing-box failed validation: ")
                 + result.StdErr);
         }
     }
@@ -131,7 +132,7 @@ public sealed class SingBoxInstaller
 
         if (line is null)
             throw new InvalidOperationException(
-                "Package checksum was not found in the official checksum file.");
+                L10n.T("官方校验和文件中未找到该安装包的校验值。", "Package checksum was not found in the official checksum file."));
 
         var expected = line.Split(
             ' ',
@@ -145,8 +146,8 @@ public sealed class SingBoxInstaller
                 expected,
                 actual,
                 StringComparison.OrdinalIgnoreCase))
-            throw new CryptographicException(
-                "sing-box package SHA-256 verification failed.");
+            throw new System.Security.Cryptography.CryptographicException(
+                L10n.T("sing-box 安装包 SHA-256 校验失败。", "sing-box package SHA-256 verification failed."));
     }
 
     private static void Extract(string packagePath, string extractPath)
@@ -162,16 +163,13 @@ public sealed class SingBoxInstaller
             return;
         }
 
-        using var archive = ArchiveFactory.Open(packagePath);
-        foreach (var entry in archive.Entries.Where(x => !x.IsDirectory))
-        {
-            entry.WriteToDirectory(
-                extractPath,
-                new ExtractionOptions
-                {
-                    ExtractFullPath = true,
-                    Overwrite = true
-                });
-        }
+        using var reader = ReaderFactory.OpenReader(packagePath);
+        reader.WriteAllToDirectory(
+            extractPath,
+            new ExtractionOptions
+            {
+                ExtractFullPath = true,
+                Overwrite = true
+            });
     }
 }

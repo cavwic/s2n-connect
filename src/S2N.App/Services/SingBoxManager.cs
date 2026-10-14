@@ -1,3 +1,4 @@
+using S2N.Localization;
 using S2N.Models;
 
 namespace S2N.Services;
@@ -46,7 +47,7 @@ public sealed class SingBoxManager
     {
         if (!IsInstalled(settings))
             throw new InvalidOperationException(
-                "sing-box is not installed.");
+                L10n.T("尚未安装 sing-box。", "sing-box is not installed."));
 
         var localDns = _networkProbe.DetectLocalDns()
             ?? "192.168.1.1";
@@ -64,7 +65,9 @@ public sealed class SingBoxManager
 
         if (check.ExitCode != 0)
             throw new InvalidOperationException(
-                "sing-box configuration check failed: "
+                L10n.T(
+                    "sing-box 配置检查失败：",
+                    "sing-box configuration check failed: ")
                 + check.StdErr);
 
         if (IsRunning(settings)) return;

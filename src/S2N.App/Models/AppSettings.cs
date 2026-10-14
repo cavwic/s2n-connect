@@ -10,8 +10,12 @@ public sealed class AppSettings
     public string SingBoxExecutablePath { get; set; } = "";
     public string ManagedConfigPath { get; set; } = "";
     public string VpsProfilePath { get; set; } = "";
+
+    public string ThemeMode { get; set; } = "system";
+    public bool GlobalMode { get; set; }
     public bool AutoStart { get; set; }
     public bool AutoConnect { get; set; }
+    public bool HasSuccessfulConnection { get; set; }
 
     public List<string> ProcessNames { get; set; } =
     [

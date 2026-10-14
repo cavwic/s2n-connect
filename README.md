@@ -16,7 +16,7 @@ VLESS + REALITY connection with sing-box process and domain routing.
 
 ## Supported VPS targets
 
-S2N Connect 0.2.1 alpha initially deploys to Ubuntu or Debian VPS instances with root SSH
+S2N Connect 0.2.2 alpha initially deploys to Ubuntu or Debian VPS instances with root SSH
 access. Other server distributions require separate validation.
 
 ## Required behavior implemented in this alpha
@@ -35,15 +35,21 @@ access. Other server distributions require separate validation.
 - Connection status is process-first: when sing-box is not running, S2N immediately shows disconnected and skips the Google probe. When sing-box is running, S2N tests Google through the managed proxy with a resilient timeout before showing connected.
 - Connect/Stop button availability is derived from the actual sing-box process state, not from a potentially slow external connectivity probe.
 - Program-name and domain-suffix rules are supported.
+- Optional global mode routes all public Internet traffic through the VPS while private/LAN traffic and the VPS address remain direct.
+- System, light, and dark themes are available; Chinese systems use Chinese and other systems use English.
+- Start-at-sign-in uses a delayed launch, and auto-connect is available only after one verified successful connection.
 - Private/LAN traffic remains direct.
 - Public DNS uses remote DoH through the VPS; local names use local DNS.
 - Minimize/close uses a system tray menu where supported.
 
 ## Build
 
+The repository uses the .NET 10 SDK to build the Avalonia 12 project. Published application packages remain self-contained and target `net8.0`, so end users do not need to install .NET.
+
 ```bash
 dotnet restore
 dotnet build -c Release
+dotnet run --project tests/S2N.ConfigChecks/S2N.ConfigChecks.csproj -c Release
 ```
 
 Publish:
@@ -58,7 +64,7 @@ dotnet publish src/S2N.App/S2N.App.csproj \
 
 ## Alpha limitations
 
-- The repository includes CI builds for every target. The generation environment could not restore NuGet packages, so the first GitHub Actions run is the authoritative compile gate.
+- The repository includes CI builds for every target. Compilation and packaging do not establish that privileged networking works on every supported operating system; the release checklist tracks those remaining runtime checks.
 - Windows elevation is the primary implementation.
 - macOS `osascript` and Linux `pkexec` privilege paths require testing on actual
   systems before a stable release.
@@ -66,9 +72,11 @@ dotnet publish src/S2N.App/S2N.App.csproj \
 
 ## Release integrity
 
-GitHub Actions builds self-contained platform archives, creates SHA-256 files,
-and generates GitHub artifact attestations. These controls improve
-verifiability but do not replace Authenticode or Apple notarization.
+GitHub Actions builds self-contained platform archives and SHA-256 files. All six
+packages must succeed and pass checksum verification before a release is published.
+Alpha tags are marked as prereleases. Artifact attestations are generated where the
+repository's GitHub plan supports them; the workflow summary reports when they are
+unavailable. These controls do not replace Authenticode or Apple notarization.
 
 ## Recommended GitHub identity
 

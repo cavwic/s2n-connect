@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using S2N.Localization;
 using S2N.Models;
 
 namespace S2N.Services;
@@ -30,6 +31,49 @@ public sealed class SingBoxConfigService
                 == System.Net.Sockets.AddressFamily.InterNetwork
                     ? profile.ServerIp + "/32"
                     : profile.ServerIp + "/128");
+
+        var routeRules = new List<object>
+        {
+            new { action = "sniff" },
+            new { port = 53, action = "hijack-dns" },
+            new
+            {
+                ip_is_private = true,
+                action = "route",
+                outbound = "direct"
+            },
+            new
+            {
+                inbound = new[] { "health-in" },
+                action = "route",
+                outbound = "vless-out"
+            }
+        };
+        var processNames = settings.ProcessNames
+            .Select(x => x.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (processNames.Length > 0)
+            routeRules.Add(new
+            {
+                process_name = processNames,
+                action = "route",
+                outbound = "vless-out"
+            });
+
+        var domainSuffixes = settings.DomainSuffixes
+            .Select(NormalizeDomain)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (domainSuffixes.Length > 0)
+            routeRules.Add(new
+            {
+                domain_suffix = domainSuffixes,
+                action = "route",
+                outbound = "vless-out"
+            });
 
         var config = new
         {
@@ -151,37 +195,8 @@ public sealed class SingBoxConfigService
                     server = "remote-doh",
                     strategy = "prefer_ipv4"
                 },
-                rules = new object[]
-                {
-                    new { action = "sniff" },
-                    new { port = 53, action = "hijack-dns" },
-                    new
-                    {
-                        ip_is_private = true,
-                        action = "route",
-                        outbound = "direct"
-                    },
-                    new
-                    {
-                        process_name = settings.ProcessNames
-                            .Where(x => !string.IsNullOrWhiteSpace(x))
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .ToArray(),
-                        action = "route",
-                        outbound = "vless-out"
-                    },
-                    new
-                    {
-                        domain_suffix = settings.DomainSuffixes
-                            .Select(NormalizeDomain)
-                            .Where(x => !string.IsNullOrWhiteSpace(x))
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .ToArray(),
-                        action = "route",
-                        outbound = "vless-out"
-                    }
-                },
-                final = "direct"
+                rules = routeRules,
+                final = settings.GlobalMode ? "vless-out" : "direct"
             }
         };
 
@@ -203,7 +218,9 @@ public sealed class SingBoxConfigService
 
         if (text.Contains('/') || text.Contains(':'))
             throw new InvalidDataException(
-                $"Invalid domain rule: {value}");
+                L10n.T(
+                    $"无效的域名规则：{value}",
+                    $"Invalid domain rule: {value}"));
         return text;
     }
 }

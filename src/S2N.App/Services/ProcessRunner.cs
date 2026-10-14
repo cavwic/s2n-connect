@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text;
+using S2N.Localization;
 
 namespace S2N.Services;
 
@@ -38,7 +39,10 @@ public static class ProcessRunner
         };
 
         if (!process.Start())
-            throw new InvalidOperationException($"Failed to start {fileName}.");
+            throw new InvalidOperationException(
+                L10n.T(
+                    $"无法启动 {fileName}。",
+                    $"Failed to start {fileName}."));
 
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
