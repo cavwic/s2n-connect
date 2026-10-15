@@ -4,7 +4,14 @@
 
 # S2N Connect · Beta
 
-[Download](https://github.com/cavwic/s2n-connect/releases) · [Report an issue](https://github.com/cavwic/s2n-connect/issues)
+**v0.3.0-beta.1** · [Report an issue](https://github.com/cavwic/s2n-connect/issues)
+
+| Platform | Direct download |
+| --- | --- |
+| Windows | [Most PCs (x64)](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-win-arm64.zip) |
+| macOS | [Apple silicon (M series)](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-osx-arm64.tar.gz) · [Intel](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-osx-x64.tar.gz) |
+| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-linux-arm64.tar.gz) |
+| Android 8.0+ | [Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-android-universal.apk) |
 
 ## What is it?
 
@@ -22,7 +29,7 @@ A tool that adds VPN functionality to your own VPS, with clients for Windows, ma
 
 **Desktop:**
 
-1. Download the package for your system and architecture, extract it fully, and run `S2N.exe` (Windows) or `S2N` (macOS / Linux).
+1. Download your system and architecture's package from the table above, extract it fully, and run `S2N.exe` (Windows) or `S2N` (macOS / Linux).
 2. Enter the VPS address, SSH port, and root user, then select your private key. Click **Test VPS** and verify the server fingerprint.
 3. Click **One-click deploy**, choose a local installation directory, and wait for completion.
 4. Set **Rules** or global mode as needed. Click **Connect** and grant administrator access; click **Stop** to disconnect.
@@ -30,7 +37,7 @@ A tool that adds VPN functionality to your own VPS, with clients for Windows, ma
 **Android (8.0+, ARM64 / x86_64):**
 
 1. Click **Export mobile profile** in the desktop app and transfer the file to your phone.
-2. Install the release's `android-universal.apk`, then tap **Choose profile file** to import it.
+2. Download and install the APK from the table above, then tap **Choose profile file** to import it.
 3. Tap **Connect VPN** and grant VPN permission. Use **Verify proxy access** to check connectivity and **Stop VPN** to disconnect.
 
 Profile files contain connection credentials. Do not share them publicly.

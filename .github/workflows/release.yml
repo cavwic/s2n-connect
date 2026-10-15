@@ -235,7 +235,7 @@ jobs:
             const entry = changelog.split(/^## /m).slice(1)
               .find(section => section.split('\n')[0].trim() === version);
             if (!entry) throw new Error(`CHANGELOG.md has no section for ${version}.`);
-            const body = fs.readFileSync('docs/release-description.md', 'utf8').trim();
+            const body = fs.readFileSync('docs/release-description.md', 'utf8').trim().replaceAll('{{TAG}}', tag);
             let release;
             try {
               release = (await github.rest.repos.getReleaseByTag({ ...context.repo, tag })).data;
