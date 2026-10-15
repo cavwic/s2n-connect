@@ -2,9 +2,11 @@
 
 ![S2N Connect：VPS 上增加 VPN 功能](docs/brand/s2n-banner.png)
 
-# S2N Connect · Beta
+# S2N Connect
 
-**v0.3.0-beta.1** · [问题反馈](https://github.com/cavwic/s2n-connect/issues)
+**专属节点，自主管理。**
+
+面对第三方代理服务可能出现的运营中断、高峰拥堵、流量限制与隐私顾虑，通过自有 VPS 构建专属 VPN，自主选择服务器、带宽与流量方案，减少对第三方代理运营方的信任依赖。
 
 | 系统 | 直接下载 |
 | --- | --- |
@@ -12,18 +14,19 @@
 | macOS | [Apple 芯片（M 系列）](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-osx-arm64.tar.gz) · [Intel 芯片](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-osx-x64.tar.gz) |
 | Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-linux-arm64.tar.gz) |
 | 安卓 8.0+ | [下载 APK（ARM64 / x86_64）](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-android-universal.apk) |
+| iOS | [Hiddify（第三方客户端）](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) · [连接指南](docs/ios.md) |
 
-## 这是什么
+## 项目简介
 
-一个给自有 VPS 增加 VPN 功能的工具，提供 Windows、macOS、Linux 和 Android 客户端。需要自备 VPS。
+S2N Connect 用于在自有 VPS 上部署 VPN 服务，提供桌面端与 Android 客户端，并支持通过第三方 iOS 客户端接入。
 
-## 能做什么
+## 核心功能
 
-- 在桌面端一键部署 VPS 服务并连接。
-- 按规则分流，或使用全局模式。
-- 导出手机配置，在 Android 上导入连接。
+- 一键部署 VPS 端 VPN 服务。
+- 支持规则分流与全局模式。
+- 支持添加手机连接。
 
-## 怎么用
+## 使用指南
 
 **准备：** Ubuntu / Debian VPS、root SSH 私钥，并在服务器和云防火墙中放行 TCP 443。已有服务请先备份配置。
 
@@ -40,9 +43,13 @@
 2. 从上表下载并安装 APK，点击“选择配置文件”导入。
 3. 点击“连接 VPN”并允许 VPN 授权；可用“验证代理访问”检查联网，点击“停止 VPN”断开。
 
+**iOS：**
+
+安装 [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) 等支持 VLESS + REALITY 的客户端，按 [iOS 连接指南](docs/ios.md)导入连接链接，允许 VPN 授权后连接。
+
 配置文件含连接凭据，请勿公开分享。
 
-[许可与第三方说明](THIRD_PARTY_NOTICES.md) · [签名说明](SIGNING.md)
+[问题反馈](https://github.com/cavwic/s2n-connect/issues) · [许可与第三方说明](THIRD_PARTY_NOTICES.md) · [签名说明](SIGNING.md)
 
 <!-- Reserved promotion slots; hidden until content is ready.
 <table width="100%">

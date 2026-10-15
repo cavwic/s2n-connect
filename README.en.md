@@ -2,9 +2,11 @@
 
 ![S2N Connect: add VPN functionality to your VPS](docs/brand/s2n-banner.png)
 
-# S2N Connect · Beta
+# S2N Connect
 
-**v0.3.0-beta.1** · [Report an issue](https://github.com/cavwic/s2n-connect/issues)
+**A dedicated connection, under your control.**
+
+Service closures, peak-hour congestion, traffic limits, and privacy concerns can make shared proxy services difficult to rely on. Build a dedicated VPN on your own VPS, choose your server, bandwidth, and traffic plan, and reduce reliance on third-party proxy operators.
 
 | Platform | Direct download |
 | --- | --- |
@@ -12,18 +14,19 @@
 | macOS | [Apple silicon (M series)](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-osx-arm64.tar.gz) · [Intel](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-osx-x64.tar.gz) |
 | Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-linux-arm64.tar.gz) |
 | Android 8.0+ | [Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-android-universal.apk) |
+| iOS | [Hiddify (third-party client)](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) · [Connection guide](docs/ios.md#ios-connection-guide) |
 
-## What is it?
+## Overview
 
-A tool that adds VPN functionality to your own VPS, with clients for Windows, macOS, Linux, and Android. You supply the VPS.
+S2N Connect deploys a VPN service on your own VPS, provides desktop and Android clients, and supports connections through third-party iOS clients.
 
-## What can it do?
+## Key features
 
-- Deploy the VPS service and connect from the desktop app.
-- Route traffic by rules or use global mode.
-- Export a mobile profile and import it on Android to connect.
+- Deploy the VPS VPN service in one step.
+- Use rule-based routing or global mode.
+- Add mobile connections.
 
-## How to use it
+## Usage
 
 **Prepare:** An Ubuntu / Debian VPS, a root SSH private key, and TCP 443 allowed through the server and cloud firewalls. Back up existing service configurations before deployment.
 
@@ -40,9 +43,13 @@ A tool that adds VPN functionality to your own VPS, with clients for Windows, ma
 2. Download and install the APK from the table above, then tap **Choose profile file** to import it.
 3. Tap **Connect VPN** and grant VPN permission. Use **Verify proxy access** to check connectivity and **Stop VPN** to disconnect.
 
+**iOS:**
+
+Install [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) or another VLESS + REALITY client. Follow the [iOS connection guide](docs/ios.md#ios-connection-guide) to import your connection link, allow VPN configuration, and connect.
+
 Profile files contain connection credentials. Do not share them publicly.
 
-[Licenses and third-party notices](THIRD_PARTY_NOTICES.md) · [Signing notes](SIGNING.md)
+[Report an issue](https://github.com/cavwic/s2n-connect/issues) · [Licenses and third-party notices](THIRD_PARTY_NOTICES.md) · [Signing notes](SIGNING.md)
 
 <!-- Reserved promotion slots; hidden until content is ready.
 <table width="100%">
