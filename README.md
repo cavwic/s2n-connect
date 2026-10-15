@@ -1,9 +1,10 @@
 [**简体中文**](README.md) · [English](README.en.md)<br>
-![S2N Connect：给 VPS 增加 VPN 功能](docs/brand/s2n-banner.png)
+
+![S2N Connect：VPS上 增加 VPN 功能](docs/brand/s2n-banner.png)
 
 # S2N Connect
 
-**VPS上 增加 VPN 功能。**
+**VPS 上增加 VPN 功能。**
 
 S2N Connect 是管理自有 VPS 连接的跨平台桌面工具：在 VPS 上部署 Xray 的 **VLESS + REALITY** 服务，在本机使用 **sing-box TUN** 接管流量，并按程序、域名或全局模式分流。你需要自备 VPS；这里提供的是部署与连接管理软件。
 
@@ -50,37 +51,6 @@ S2N Connect 是管理自有 VPS 连接的跨平台桌面工具：在 VPS 上部�
 5. 点击“停止”断开连接，使用“退出”结束程序。支持托盘的环境中，关闭窗口或最小化可能只会隐藏主窗口。
 
 首次成功连接后，可再按需开启自动连接和登录启动。自动连接不会代填加密 SSH 私钥口令；日常连接使用已部署的 VPS 配置。
-
-## 构建与验证
-
-开发构建使用 **.NET 10 SDK** 和 **Avalonia 12**，应用目标框架为 `net8.0`。发布包为 self-contained，终端用户无需另装 .NET。
-
-```bash
-dotnet restore
-dotnet build -c Release
-dotnet run --project tests/S2N.ConfigChecks/S2N.ConfigChecks.csproj -c Release
-dotnet run --project tests/S2N.ReleaseChecks/S2N.ReleaseChecks.csproj -c Release
-```
-
-例如发布 Windows x64：
-
-```bash
-dotnet publish src/S2N.App/S2N.App.csproj \
-  -c Release \
-  -r win-x64 \
-  --self-contained true \
-  -o artifacts/win-x64
-```
-
-配置回归检查使用独立临时目录，验证分流、DNS 和设置中的关键约束，不连接 VPS、不启动实际 TUN。其他发布目标为 `win-arm64`、`osx-x64`、`osx-arm64`、`linux-x64`、`linux-arm64`。
-
-## Alpha 限制与发布校验
-
-- 当前为 Alpha。真实 VPS 连接、局域网访问、停止后的路由与 DNS 恢复，仍需按[发布检查清单](RELEASE_CHECKLIST.md)在各平台实测；不要将构建通过视为联网功能验证通过。
-- Windows 提权是当前主要实现；macOS 的 `osascript` 与 Linux 的 `pkexec` 路径仍需更多实机验证。其他 VPS 发行版尚未纳入部署支持，IPv6 行为也需单独验证。
-- 当前发布包未签名，macOS 包未公证，系统可能显示信任提示。SHA-256 和 GitHub 溯源证明不替代平台签名，详见[签名说明](SIGNING.md)。
-- GitHub Actions 等待六个平台包全部构建成功并验证 SHA-256 后发布；Alpha 标签标为预发布。CodeQL 与 artifact attestations 受仓库可用功能限制，运行或跳过状态以工作流摘要为准。
-- 连通性与 IP 信息查询会访问 Google、Cloudflare 和 IP 查询服务；配置文件含客户端连接凭据，请勿公开上传。私钥内容不保存到应用设置中，具体见[安全说明](SECURITY.md)。
 
 ## 许可与项目文档
 
