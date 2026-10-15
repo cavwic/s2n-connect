@@ -3,9 +3,9 @@
 
 # S2N Connect
 
-**给你的 VPS 增加 VPN 功能。**
+**VPS上 增加 VPN 功能。**
 
-这就是 S2N 的命名含义。S2N Connect 是管理自有 VPS 连接的跨平台桌面工具：在 VPS 上部署 Xray 的 **VLESS + REALITY** 服务，在本机使用 **sing-box TUN** 接管流量，并按程序、域名或全局模式分流。你需要自备 VPS；这里提供的是部署与连接管理软件。
+S2N Connect 是管理自有 VPS 连接的跨平台桌面工具：在 VPS 上部署 Xray 的 **VLESS + REALITY** 服务，在本机使用 **sing-box TUN** 接管流量，并按程序、域名或全局模式分流。你需要自备 VPS；这里提供的是部署与连接管理软件。
 
 [下载 Alpha 版本](https://github.com/cavwic/s2n-connect/releases) · [更新记录](CHANGELOG.md) · [报告问题](https://github.com/cavwic/s2n-connect/issues)
 
