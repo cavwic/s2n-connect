@@ -1,10 +1,13 @@
-<a name="s2n-chinese"></a>
+[简体中文](#user-content-s2n-chinese) · [English](#user-content-s2n-english)
 
-[**简体中文**](#s2n-chinese) · [English](#s2n-english)
-
-![S2N Connect：VPS 上增加 VPN 功能](docs/brand/s2n-banner.png)
+![S2N Connect · VPS → VPN](docs/brand/s2n-banner.png)
 
 # S2N Connect
+
+<details name="s2n-language" open>
+<summary>简体中文</summary>
+
+<a name="s2n-chinese"></a>
 
 **专属节点，自主管理。**
 
@@ -53,13 +56,12 @@ S2N Connect 用于在自有 VPS 上部署 VPN 服务，提供桌面端与 Androi
 
 [问题反馈](https://github.com/cavwic/s2n-connect/issues) · [许可与第三方说明](THIRD_PARTY_NOTICES.md) · [签名说明](SIGNING.md)
 
----
+</details>
+
+<details name="s2n-language">
+<summary>English</summary>
 
 <a name="s2n-english"></a>
-
-[简体中文](#s2n-chinese) · [**English**](#s2n-english)
-
-## English
 
 **A dedicated connection, under your control.**
 
@@ -73,17 +75,17 @@ Service closures, peak-hour congestion, traffic limits, and privacy concerns can
 | Android 8.0+ | [Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.1/S2N-v0.3.0-beta.1-android-universal.apk) |
 | iOS | [Hiddify (third-party client)](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) · [Connection guide](docs/ios.md#ios-connection-guide) |
 
-### Overview
+## Overview
 
 S2N Connect deploys a VPN service on your own VPS, provides desktop and Android clients, and supports connections through third-party iOS clients.
 
-### Key features
+## Key features
 
 - Deploy the VPS VPN service in one step.
 - Use rule-based routing or global mode.
 - Add mobile connections.
 
-### Usage
+## Usage
 
 **Prepare:** An Ubuntu / Debian VPS, a root SSH private key, and TCP 443 allowed through the server and cloud firewalls. Back up existing service configurations before deployment.
 
@@ -107,6 +109,8 @@ Install [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) 
 Profile files contain connection credentials. Do not share them publicly.
 
 [Report an issue](https://github.com/cavwic/s2n-connect/issues) · [Licenses and third-party notices](THIRD_PARTY_NOTICES.md) · [Signing notes](SIGNING.md)
+
+</details>
 
 <!-- Reserved promotion slots; hidden until content is ready.
 <table width="100%">
