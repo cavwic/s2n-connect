@@ -1,4 +1,4 @@
-[简体中文说明](https://github.com/cavwic/s2n-connect/blob/main/README.md) · [English guide](https://github.com/cavwic/s2n-connect/blob/main/README.en.md)
+[简体中文说明](https://github.com/cavwic/s2n-connect#s2n-chinese) · [English guide](https://github.com/cavwic/s2n-connect#s2n-english)
 
 **专属节点，自主管理。**
 
