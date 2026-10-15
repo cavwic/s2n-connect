@@ -88,7 +88,10 @@ The complete release has **15 assets**:
 - `S2N-v0.3.0-beta.1-android-universal.apk` and its `.sha256` file.
 - `SHA256SUMS.txt` covering all seven packages.
 
-Beta tags are prereleases. Public repositories generate provenance attestations
+Beta status remains in the version tag and release name. Releases use GitHub's
+Latest classification so the repository sidebar links directly to the current
+version; the platform's prerelease flag is false because GitHub cannot mark a
+prerelease as Latest. Public repositories generate provenance attestations
 for desktop archives and the APK. Private repositories require Enterprise Cloud
 support and explicit `ENABLE_PRIVATE_ATTESTATIONS=true`; otherwise the workflow
 summary records the skipped attestation. Checksums, provenance, Android signing,

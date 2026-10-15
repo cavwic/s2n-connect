@@ -1,9 +1,3 @@
-[简体中文说明](https://github.com/cavwic/s2n-connect#user-content-s2n-chinese) · [English guide](https://github.com/cavwic/s2n-connect#user-content-s2n-english)
-
-**专属节点，自主管理。**
-
-面对第三方代理服务可能出现的运营中断、高峰拥堵、流量限制与隐私顾虑，通过自有 VPS 构建专属 VPN，自主选择服务器、带宽与流量方案，减少对第三方代理运营方的信任依赖。
-
 | 系统 / Platform | 直接下载 / Download |
 | --- | --- |
 | Windows | [常见电脑 / Most PCs (x64)](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-win-arm64.zip) |
@@ -11,6 +5,12 @@
 | Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-linux-arm64.tar.gz) |
 | 安卓 / Android 8.0+ | [下载 APK / Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-android-universal.apk) |
 | iOS | [Hiddify（第三方 / Third-party client）](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) · [连接指南 / Guide](https://github.com/cavwic/s2n-connect/blob/main/docs/ios.md) |
+
+[简体中文说明](https://github.com/cavwic/s2n-connect#user-content-s2n-chinese) · [English guide](https://github.com/cavwic/s2n-connect#user-content-s2n-english)
+
+**专属节点，自主管理。**
+
+面对第三方代理服务可能出现的运营中断、高峰拥堵、流量限制与隐私顾虑，通过自有 VPS 构建专属 VPN，自主选择服务器、带宽与流量方案，减少对第三方代理运营方的信任依赖。
 
 ## 项目简介
 

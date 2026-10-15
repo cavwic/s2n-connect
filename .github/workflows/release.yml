@@ -252,7 +252,7 @@ jobs:
                 target_commitish: context.sha,
                 name: `S2N Connect ${tag}`,
                 draft: true,
-                prerelease: tag.includes('-'),
+                prerelease: false,
                 body
               })).data;
             }
@@ -288,9 +288,10 @@ jobs:
               ...context.repo,
               release_id: release.id,
               draft: false,
-              prerelease: tag.includes('-'),
+              // Keep Beta in the tag/name; GitHub requires this flag to be false for Latest.
+              prerelease: false,
               body,
-              make_latest: tag.includes('-') ? 'false' : 'true'
+              make_latest: 'true'
             })).data;
             await core.summary.addHeading('Release published')
               .addLink(published.name, published.html_url)
