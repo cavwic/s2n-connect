@@ -54,7 +54,7 @@ public partial class App : Application
 
             _trayIcon = new TrayIcon
             {
-                Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://S2N/Assets/s2n.ico"))),
+                Icon = new WindowIcon(AssetLoader.Open(new Uri("avares://S2N/Assets/s2n-vps-vpn.ico"))),
                 ToolTipText = "S2N",
                 Menu = menu,
                 IsVisible = true

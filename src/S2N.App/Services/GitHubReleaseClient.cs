@@ -12,13 +12,15 @@ public sealed class GitHubReleaseClient
     private readonly HttpClient _httpClient;
 
     public GitHubReleaseClient()
+        : this(new HttpClient { Timeout = TimeSpan.FromMinutes(5) })
     {
-        _httpClient = new HttpClient
-        {
-            Timeout = TimeSpan.FromMinutes(5)
-        };
+    }
+
+    internal GitHubReleaseClient(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("S2N-Connect", "0.2.1"));
+            new ProductInfoHeaderValue("S2N-Connect", "0.2.2"));
         _httpClient.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue(
                 "application/vnd.github+json"));
@@ -49,6 +51,7 @@ public sealed class GitHubReleaseClient
 
         string? packageName = null;
         string? packageUrl = null;
+        string? packageDigest = null;
         string? checksumName = null;
         string? checksumUrl = null;
 
@@ -74,6 +77,9 @@ public sealed class GitHubReleaseClient
             {
                 packageName = name;
                 packageUrl = url;
+                packageDigest = asset.TryGetProperty("digest", out var digest)
+                    ? digest.GetString()
+                    : null;
             }
         }
 
@@ -83,18 +89,33 @@ public sealed class GitHubReleaseClient
                     $"未找到适用于 {os}/{arch} 的官方 sing-box 安装包。",
                     $"No official sing-box asset was found for {os}/{arch}."));
 
-        if (checksumName is null || checksumUrl is null)
-            throw new InvalidOperationException(
-                L10n.T(
-                    "该发布版本不包含校验和文件。",
-                    "The release does not contain a checksum file."));
+        // Some official releases publish SHA-256 through GitHub's asset
+        // metadata instead of a separate checksum file. Never fall back if
+        // a checksum file was published but later fails verification.
+        if (checksumName is null)
+            RequireSha256Digest(packageDigest);
 
         return new SingBoxReleaseAsset(
             version,
             packageName,
             new Uri(packageUrl),
             checksumName,
-            new Uri(checksumUrl));
+            checksumUrl is null ? null : new Uri(checksumUrl),
+            packageDigest);
+    }
+
+    internal static string RequireSha256Digest(string? digest)
+    {
+        if (digest is null
+            || digest.Length != 71
+            || !digest.StartsWith("sha256:", StringComparison.Ordinal)
+            || !digest[7..].All(Uri.IsHexDigit))
+            throw new InvalidDataException(
+                L10n.T(
+                    "该发布包缺少有效的官方 SHA-256 摘要，已拒绝安装。",
+                    "The release asset has no valid official SHA-256 digest; installation was refused."));
+
+        return digest[7..];
     }
 
     public async Task DownloadAsync(
@@ -133,5 +154,6 @@ public sealed record SingBoxReleaseAsset(
     string Version,
     string PackageName,
     Uri PackageUri,
-    string ChecksumName,
-    Uri ChecksumUri);
+    string? ChecksumName,
+    Uri? ChecksumUri,
+    string? PackageDigest);

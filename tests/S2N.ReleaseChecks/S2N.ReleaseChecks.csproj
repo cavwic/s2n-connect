@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <RollForward>LatestMajor</RollForward>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/S2N.App/Services/GitHubReleaseClient.cs" Link="GitHubReleaseClient.cs" />
+    <Compile Include="../../src/S2N.App/Services/SingBoxInstaller.cs" Link="SingBoxInstaller.cs" />
+    <PackageReference Include="SharpCompress" Version="0.50.1" />
+  </ItemGroup>
+</Project>

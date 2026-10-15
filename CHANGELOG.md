@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.2-alpha.2
+
+### Added
+
+- Chinese and English project guides with a language selector at the top of each README.
+- A new application icon and README title banner expressing the product's purpose: adding VPN functionality to a personal VPS.
+- Empty, clearly separated spaces for future VPS recommendations and personal promotion in both languages.
+
+### Fixed
+
+- Official sing-box releases without a separate checksum file can use the package's official GitHub SHA-256 digest. Missing or invalid verification data and hash mismatches still refuse installation; a published checksum file takes priority without a silent fallback on failure.
+
 ## 0.2.2-alpha.1
 
 ### Added

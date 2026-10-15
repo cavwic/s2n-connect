@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using SharpCompress.Readers;
 using SharpCompress.Common;
 using S2N.Localization;
@@ -32,20 +33,24 @@ public sealed class SingBoxInstaller
         try
         {
             var packagePath = Path.Combine(tempRoot, release.PackageName);
-            var checksumPath = Path.Combine(tempRoot, release.ChecksumName);
+            string? checksumPath = null;
 
             await _releaseClient.DownloadAsync(
                 release.PackageUri,
                 packagePath,
                 progress,
                 cancellationToken);
-            await _releaseClient.DownloadAsync(
-                release.ChecksumUri,
-                checksumPath,
-                null,
-                cancellationToken);
+            if (release.ChecksumUri is not null)
+            {
+                checksumPath = Path.Combine(tempRoot, release.ChecksumName!);
+                await _releaseClient.DownloadAsync(
+                    release.ChecksumUri,
+                    checksumPath,
+                    null,
+                    cancellationToken);
+            }
 
-            VerifyChecksum(packagePath, checksumPath, release.PackageName);
+            VerifyPackage(packagePath, checksumPath, release);
 
             var extractPath = Path.Combine(tempRoot, "extract");
             Directory.CreateDirectory(extractPath);
@@ -120,24 +125,55 @@ public sealed class SingBoxInstaller
         }
     }
 
+    internal static void VerifyPackage(
+        string packagePath,
+        string? checksumPath,
+        SingBoxReleaseAsset release)
+    {
+        if (release.ChecksumName is not null || release.ChecksumUri is not null)
+        {
+            if (release.ChecksumName is null
+                || release.ChecksumUri is null
+                || checksumPath is null)
+                throw new InvalidDataException(
+                    L10n.T(
+                        "官方校验和文件缺失，已拒绝安装。",
+                        "The official checksum file is missing; installation was refused."));
+
+            VerifyChecksum(packagePath, checksumPath, release.PackageName);
+            return;
+        }
+
+        VerifyExpectedSha256(
+            packagePath,
+            GitHubReleaseClient.RequireSha256Digest(release.PackageDigest));
+    }
+
     private static void VerifyChecksum(
         string packagePath,
         string checksumPath,
         string packageName)
     {
-        var line = File.ReadLines(checksumPath)
-            .FirstOrDefault(x =>
-                x.EndsWith("  " + packageName, StringComparison.Ordinal)
-                || x.EndsWith(" *" + packageName, StringComparison.Ordinal));
+        var pattern = "^(\\S+)[ \\t]+\\*?"
+            + Regex.Escape(packageName) + "$";
+        var matches = File.ReadLines(checksumPath)
+            .Select(line => Regex.Match(line, pattern, RegexOptions.CultureInvariant))
+            .Where(match => match.Success)
+            .ToArray();
 
-        if (line is null)
+        if (matches.Length != 1
+            || matches[0].Groups[1].Value.Length != 64
+            || !matches[0].Groups[1].Value.All(Uri.IsHexDigit))
             throw new InvalidOperationException(
-                L10n.T("官方校验和文件中未找到该安装包的校验值。", "Package checksum was not found in the official checksum file."));
+                L10n.T(
+                    "官方校验和文件中未找到唯一有效的安装包 SHA-256 校验值。",
+                    "The official checksum file does not contain one unique valid SHA-256 checksum for the package."));
 
-        var expected = line.Split(
-            ' ',
-            StringSplitOptions.RemoveEmptyEntries)[0].Trim();
+        VerifyExpectedSha256(packagePath, matches[0].Groups[1].Value);
+    }
 
+    private static void VerifyExpectedSha256(string packagePath, string expected)
+    {
         using var stream = File.OpenRead(packagePath);
         var actual = Convert.ToHexString(
             SHA256.HashData(stream)).ToLowerInvariant();

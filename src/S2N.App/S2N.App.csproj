@@ -4,14 +4,14 @@
     <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>S2N</AssemblyName>
     <RootNamespace>S2N</RootNamespace>
-    <ApplicationIcon>Assets/s2n.ico</ApplicationIcon>
+    <ApplicationIcon>Assets/s2n-vps-vpn.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <PublishTrimmed>false</PublishTrimmed>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>0.2.2-alpha.1</Version>
+    <Version>0.2.2-alpha.2</Version>
     <AssemblyVersion>0.2.2.0</AssemblyVersion>
-    <FileVersion>0.2.2.0</FileVersion>
-    <InformationalVersion>0.2.2-alpha.1</InformationalVersion>
+    <FileVersion>0.2.2.1</FileVersion>
+    <InformationalVersion>0.2.2-alpha.2</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

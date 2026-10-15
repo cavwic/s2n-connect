@@ -1,0 +1,31 @@
+{
+  "generator": "Built-in image_gen",
+  "concept": "S2N adds VPN functionality to a personal VPS; server slots and a routed network endpoint retain the existing blue identity.",
+  "assets": [
+    {
+      "file": "s2n-icon.png",
+      "role": "Original transparent application-icon artwork",
+      "prompt": "Use case: logo-brand. Asset type: production desktop app icon for S2N Connect, a personal tool that adds VPN functionality to a user's own VPS. Create a single square 1024x1024 icon with genuinely transparent corners around a rounded-square royal-blue tile, preserving the existing product's blue-and-white visual identity. Inside the tile, create an original, very simple white server/network symbol: two broad horizontal server slots form a compact central server, and one continuous, bold, pale-cyan routed path curves from it to a single small circular network endpoint, suggesting a VPS becoming a connected private network. The silhouette should feel subtly like a flowing S, but semantic clarity and tiny-size legibility matter more than a literal letter. Crisp, vector-like geometry, flat or almost flat colors, generous optical padding, sophisticated balanced proportions; sufficiently heavy strokes to read at 16, 32 and 48 pixels. Tile royal blue around #2F6FED, white and very pale cyan mark. No letters, no numbers, no words, no lock, no shield, no globe, no busy circuits, no 3D bevel, no mockup, no extra variants, no watermark. The output is just one finished application icon, centered and filling most of the canvas."
+    },
+    {
+      "file": "s2n-banner.png",
+      "role": "Bilingual README title image",
+      "reference": "s2n-icon.png",
+      "prompt": "Use case: logo-brand. Asset type: finished wide GitHub README title banner for S2N Connect. Image 1 is the approved new app icon and must serve as the brand identity reference: preserve its rounded royal-blue tile, white two-slot server and pale-cyan network loop/endpoint symbol faithfully. Create one polished wide 2:1 banner, approximately 1600x800 or 2048x1024. This project adds VPN functionality to a user's own VPS; show that idea through a restrained editorial network diagram, not cybersecurity stock art. Composition: clean warm-white/very pale blue background; a broad left brand block contains the icon at modest size beside very large dark-navy typographic title 'S2N', with the secondary line 'VPS + VPN' underneath. The right third contains a fine, architectural, blue line drawing of a small personal computer linked by a single routed cyan-blue line to a compact VPS server, with a single small plus sign where the connection joins. Give typography and negative space most of the area. Use only the existing icon's royal blue, white, pale cyan and dark navy, with a calm pale-blue technical grid almost invisible behind the diagram. Precise, minimal, premium open-source developer-tool identity. Exact visible text, verbatim and only: 'S2N' and 'VPS + VPN'. No additional tagline, no extra letters or labels, no URLs, no claimed speeds, no badges, no partner brands, no advertising content, no padlocks or shields or globes, no neon/glow, no 3D mockup, no watermark. Keep a generous safe margin so the full composition works as an embedded README banner."
+    }
+  ],
+  "applicationFiles": [
+    "../../src/S2N.App/Assets/s2n-vps-vpn.ico",
+    "../../src/S2N.App/Assets/s2n-vps-vpn.png"
+  ],
+  "iconSizes": [
+    16,
+    24,
+    32,
+    48,
+    64,
+    128,
+    256
+  ],
+  "processing": "Mechanical PNG resizing and multi-resolution ICO encoding preserve the generated design and transparency."
+}

@@ -43,6 +43,8 @@ jobs:
             }
       - name: Check routing and settings regressions
         run: dotnet run --project tests/S2N.ConfigChecks/S2N.ConfigChecks.csproj --configuration Release
+      - name: Check release package integrity handling
+        run: dotnet run --project tests/S2N.ReleaseChecks/S2N.ReleaseChecks.csproj --configuration Release
 
   build:
     name: Package ${{ matrix.rid }}

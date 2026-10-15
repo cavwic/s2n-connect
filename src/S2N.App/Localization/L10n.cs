@@ -83,8 +83,8 @@ public static class L10n
         EnglishByChinese =
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
-                ["自建 VPS 与 sing-box 跨平台管理工具"] =
-                    "Cross-platform VPS and sing-box manager",
+                ["为你的 VPS 增加 VPN 功能"] =
+                    "Add VPN functionality to your VPS",
                 ["本地 IP 及位置"] = "Local IP and location",
                 ["获取中"] = "Loading",
                 ["出口 IP 及位置"] = "Exit IP and location",
