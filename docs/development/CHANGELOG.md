@@ -7,6 +7,7 @@
 - Group technical documentation under `docs/`, community policies under `.github/`, and build helpers under `scripts/` to shorten the repository file list.
 - Preserve the documentation directory structure in desktop packages, including the banner, iOS guide, notices, and full license texts.
 - Resolve the repository location from the build scripts so they work when invoked from another directory.
+- Reduce CI emulator load and recover only the identified Pixel Launcher system dialog while retaining VPN authorization and TUN lifecycle checks.
 
 ## 0.3.0-beta.1
 

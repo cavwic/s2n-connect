@@ -206,12 +206,14 @@ jobs:
           api-level: 35
           target: google_apis
           arch: x86_64
-          profile: pixel_7_pro
+          profile: Nexus 5
+          cores: 2
+          ram-size: 2048M
           disable-animations: true
           emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           script: >-
             bash -c 'set +e; cd android || exit $?;
-            bash ./gradlew --no-daemon --refresh-dependencies --info :app:connectedDebugAndroidTest; gradle_status=$?;
+            bash ./gradlew --no-daemon --max-workers=2 --refresh-dependencies --info :app:connectedDebugAndroidTest; gradle_status=$?;
             mkdir -p app/build/reports/androidTests;
             adb pull /sdcard/Android/data/com.cavwic.s2n.debug/files/screenshots app/build/reports/androidTests/screenshots || true;
             exit "$gradle_status"'

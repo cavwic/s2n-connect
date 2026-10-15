@@ -10,7 +10,9 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.Until
 import com.cavwic.s2n.vpn.S2NVpnService
 import java.io.File
@@ -37,6 +39,7 @@ class VpnSmokeTests {
         context.getSharedPreferences("ui", 0).edit().clear().commit()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             instrumentation.waitForIdleSync()
+            dismissPixelLauncherAnr()
             screenshot("01-chinese-system.png")
             scenario.onActivity { activity ->
                 assertEquals("S2N Connect", activity.title)
@@ -50,8 +53,9 @@ class VpnSmokeTests {
                 assertEquals("Connect VPN", activity.findViewById<android.widget.Button>(R.id.connect_button).text.toString())
                 activity.findViewById<android.widget.Button>(R.id.theme_button).performClick()
             }
-            assertNotNull(device.wait(Until.findObject(By.text("Dark")), 5000))
-            device.findObject(By.text("Dark")).click()
+            val dark = waitForUiTarget(By.text("Dark"), 5000)
+            assertNotNull(dark)
+            dark!!.click()
             instrumentation.waitForIdleSync()
             screenshot("02-english-dark.png")
         }
@@ -64,17 +68,42 @@ class VpnSmokeTests {
         assertTrue("UI screenshot must be written", device.takeScreenshot(File(directory, name)))
     }
 
+    private fun dismissPixelLauncherAnr() {
+        // The CI image can display a Launcher ANR over an otherwise working app.
+        // Match this observed system dialog only; app crashes and permission dialogs
+        // must remain visible and fail their original assertions.
+        val message = By.pkg("android").text("Pixel Launcher isn't responding")
+        device.findObject(message) ?: return
+        screenshot("00-launcher-anr.png")
+        val close = device.findObject(By.pkg("android").text("Close app"))
+        assertNotNull("The identified Pixel Launcher ANR must offer Close app", close)
+        close!!.click()
+        assertTrue("Pixel Launcher ANR must disappear after Close app",
+            device.wait(Until.gone(message), 5000) == true)
+    }
+
+    private fun waitForUiTarget(selector: BySelector, timeout: Long): UiObject2? {
+        val deadline = SystemClock.elapsedRealtime() + timeout
+        do {
+            dismissPixelLauncherAnr()
+            device.findObject(selector)?.let { return it }
+            SystemClock.sleep(100)
+        } while (SystemClock.elapsedRealtime() < deadline)
+        return null
+    }
+
     @Test fun authorizedSyntheticTunStartsAndStops() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            dismissPixelLauncherAnr()
             // ConfirmDialog requires a calling Activity identity supplied by startActivityForResult.
             // Keep the app visible, matching a real user starting a VPN from the UI.
             val authorization = VpnService.prepare(context)
             if (authorization != null) {
                 scenario.onActivity { activity -> activity.startActivityForResult(authorization, 901) }
-                val ok = device.wait(Until.findObject(By.res("android", "button1")), 15000)
+                val ok = waitForUiTarget(By.res("android", "button1"), 15000)
                 if (ok == null) screenshot("03-missing-vpn-authorization.png")
                 assertNotNull("System VPN authorization dialog must be available", ok)
-                ok.click()
+                ok!!.click()
                 waitFor(10000) { VpnService.prepare(context) == null }
             }
             // 901 intentionally avoids MainActivity's user-connection request code:
