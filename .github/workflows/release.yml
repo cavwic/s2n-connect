@@ -50,6 +50,8 @@ jobs:
         run: dotnet run --project tests/S2N.ConfigChecks/S2N.ConfigChecks.csproj --configuration Release
       - name: Check release package integrity handling
         run: dotnet run --project tests/S2N.ReleaseChecks/S2N.ReleaseChecks.csproj --configuration Release
+      - name: Check mobile profile export
+        run: dotnet run --project tests/S2N.MobileExportChecks/S2N.MobileExportChecks.csproj --configuration Release
 
   android:
     name: Package and test Android
@@ -110,6 +112,16 @@ jobs:
           --no-restore
           -p:ContinuousIntegrationBuild=true
           --output artifacts/${{ matrix.rid }}
+
+      - name: Include desktop licenses and documentation
+        shell: pwsh
+        run: |
+          $s2nArtifactPath = "artifacts/${{ matrix.rid }}"
+          Copy-Item -LiteralPath @('LICENSE', 'README.md', 'README.en.md', 'THIRD_PARTY_NOTICES.md', 'SIGNING.md') -Destination $s2nArtifactPath
+          if (!(Test-Path -LiteralPath 'docs/licenses' -PathType Container)) {
+            throw 'Release packaging requires the full third-party license texts in docs/licenses.'
+          }
+          Copy-Item -LiteralPath 'docs/licenses' -Destination (Join-Path $s2nArtifactPath 'licenses') -Recurse
 
       - name: Archive and checksum on Windows
         if: matrix.archive == 'zip'

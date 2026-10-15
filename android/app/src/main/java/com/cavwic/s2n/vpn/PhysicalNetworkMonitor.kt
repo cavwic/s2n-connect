@@ -24,9 +24,9 @@ internal class PhysicalNetworkMonitor(private val service: S2NVpnService) {
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            if (closed) return
-            currentNetwork = network
-            publish(network)
+            if (closed || !isPhysical(network)) return
+            currentNetwork = if (Build.VERSION.SDK_INT < 28) selectPhysicalNetwork() else network
+            currentNetwork?.let { publish(it) }
         }
 
         override fun onLinkPropertiesChanged(network: Network, properties: LinkProperties) {
@@ -39,8 +39,10 @@ internal class PhysicalNetworkMonitor(private val service: S2NVpnService) {
 
         override fun onLost(network: Network) {
             if (closed || network != currentNetwork) return
-            currentNetwork = null
-            listener?.updateDefaultInterface("", -1, false, false)
+            currentNetwork = selectPhysicalNetwork(excluded = network)
+            val replacement = currentNetwork
+            if (replacement != null) publish(replacement)
+            else listener?.updateDefaultInterface("", -1, false, false)
             service.updateUnderlyingNetwork()
         }
     }
@@ -55,13 +57,12 @@ internal class PhysicalNetworkMonitor(private val service: S2NVpnService) {
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
             .build()
-        currentNetwork = connectivity.activeNetwork?.takeIf { isPhysical(it) }
-            ?: connectivity.allNetworks.firstOrNull { isPhysical(it) }
+        currentNetwork = selectPhysicalNetwork()
         try {
             when {
                 Build.VERSION.SDK_INT >= 31 -> connectivity.registerBestMatchingNetworkCallback(request, callback, handler)
                 Build.VERSION.SDK_INT >= 28 -> connectivity.requestNetwork(request, callback, handler)
-                else -> connectivity.registerDefaultNetworkCallback(callback, handler)
+                else -> connectivity.registerNetworkCallback(request, callback, handler)
             }
             registered = true
             currentNetwork?.let { publish(it) }
@@ -83,6 +84,25 @@ internal class PhysicalNetworkMonitor(private val service: S2NVpnService) {
             it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
                 it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
         } == true
+
+    private fun selectPhysicalNetwork(excluded: Network? = null): Network? {
+        connectivity.activeNetwork?.takeIf { it != excluded && isPhysical(it) }?.let { return it }
+        // API 26/27 only expose an all-matching-network listener. Prefer a validated
+        // physical uplink when the system default is already our VPN interface.
+        return connectivity.allNetworks.filter { it != excluded && isPhysical(it) }
+            .maxByOrNull { network ->
+                val capabilities = connectivity.getNetworkCapabilities(network)
+                var priority = 0
+                if (capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) == true) priority += 100
+                if (capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) == true) priority += 5
+                priority + when {
+                    capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) == true -> 40
+                    capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true -> 30
+                    capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true -> 20
+                    else -> 10
+                }
+            }
+    }
 
     private fun publish(network: Network, suppliedProperties: LinkProperties? = null) {
         if (closed || !isPhysical(network)) return

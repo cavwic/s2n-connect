@@ -59,7 +59,15 @@ class MainActivity : Activity() {
         setTheme(if (dark) android.R.style.Theme_Material_NoActionBar else android.R.style.Theme_Material_Light_NoActionBar)
         super.onCreate(savedInstanceState)
         title = "S2N Connect"
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        if (!BuildConfig.DEBUG) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        if (Build.VERSION.SDK_INT >= 30) {
+            val appearance = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
+                android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            window.insetsController?.setSystemBarsAppearance(if (dark) 0 else appearance, appearance)
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = if (dark) 0 else View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        }
         buildUi()
     }
 
@@ -153,18 +161,18 @@ class MainActivity : Activity() {
 
     private fun label(value: String, size: Float = 16f): TextView = TextView(this).apply {
         text = value; textSize = size; setPadding(0, dp(8), 0, dp(8))
-        layout.addView(this, LinearLayout.LayoutParams(-1, -2))
+        this@MainActivity.layout.addView(this, LinearLayout.LayoutParams(-1, -2))
     }
     private fun field(hintText: String, value: String = "", multiline: Boolean = false): EditText = EditText(this).apply {
         hint = hintText; textSize = 17f; setText(value); setSingleLine(!multiline)
         inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS or
             (if (multiline) InputType.TYPE_TEXT_FLAG_MULTI_LINE else 0)
         importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
-        layout.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
+        this@MainActivity.layout.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
     }
     private fun button(value: String, viewId: Int = View.NO_ID, action: () -> Unit): Button = Button(this).apply {
         id = viewId; text = value; textSize = 17f; isAllCaps = false; setOnClickListener { action() }
-        layout.addView(this, LinearLayout.LayoutParams(-1, dp(56)).apply { topMargin = dp(4) })
+        this@MainActivity.layout.addView(this, LinearLayout.LayoutParams(-1, dp(56)).apply { topMargin = dp(4) })
     }
     private fun fill(profile: Profile) {
         server.setText(profile.serverIp); port.setText(profile.serverPort.toString()); uuid.setText(profile.uuid)

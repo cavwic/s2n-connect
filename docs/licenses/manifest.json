@@ -1,0 +1,464 @@
+{
+  "schema_version": 1,
+  "inventory_source": "artifacts/win-x64/S2N.deps.json",
+  "scope": "Desktop published NuGet dependencies and self-contained .NET runtime; Android handled separately",
+  "packages": [
+    {
+      "package": "runtimepack.Microsoft.NETCore.App.Runtime.win-x64",
+      "version": "8.0.29",
+      "kind": "runtimepack",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "18fd75c847399745c43b5970fec840ba71064e80"
+      },
+      "notice_files": [
+        "dotnet-runtime/LICENSE.txt",
+        "dotnet-runtime/THIRD-PARTY-NOTICES.txt"
+      ]
+    },
+    {
+      "package": "Avalonia",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.Angle.Windows.Natives",
+      "version": "2.1.27548.20260419",
+      "kind": "package",
+      "nuget_license": "LICENSE",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/angle/",
+        "commit": "1c89805903c1482166356d3b950d474973180e61"
+      },
+      "notice_files": [
+        "ANGLE/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.Desktop",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.FreeDesktop",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.FreeDesktop.AtSpi",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.HarfBuzz",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.Native",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.Remote.Protocol",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.Skia",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.Themes.Fluent",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.Win32",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Avalonia.X11",
+      "version": "12.1.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/AvaloniaUI/Avalonia/",
+        "commit": "a21b9f573172f705a944dcc8aad7f036b9986f39"
+      },
+      "notice_files": [
+        "Avalonia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "BouncyCastle.Cryptography",
+      "version": "2.7.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/bcgit/bc-csharp",
+        "branch": "refs/heads/release/v2.7",
+        "commit": "4007498b13582d90ee1eda5d9920c324428b98b3"
+      },
+      "notice_files": [
+        "BouncyCastle/LICENSE.md"
+      ]
+    },
+    {
+      "package": "HarfBuzzSharp",
+      "version": "8.3.1.3",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://go.microsoft.com/fwlink/?linkid=868515",
+        "branch": "release/3.119.2",
+        "commit": "2888c737ad016d584c74525e2d35db5097ea8576"
+      },
+      "notice_files": [
+        "HarfBuzzSharp/LICENSE.txt",
+        "HarfBuzz/COPYING.txt"
+      ]
+    },
+    {
+      "package": "HarfBuzzSharp.NativeAssets.Win32",
+      "version": "8.3.1.3",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://go.microsoft.com/fwlink/?linkid=868515",
+        "branch": "release/3.119.2",
+        "commit": "2888c737ad016d584c74525e2d35db5097ea8576"
+      },
+      "notice_files": [
+        "HarfBuzzSharp/LICENSE.txt",
+        "HarfBuzz/COPYING.txt"
+      ]
+    },
+    {
+      "package": "MicroCom.Runtime",
+      "version": "0.11.6",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/kekekeks/MicroCom",
+        "commit": "76785efcafd91b5902fd19dd11145f6dd655b7b4"
+      },
+      "notice_files": [
+        "MicroCom/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "Microsoft.Extensions.DependencyInjection.Abstractions",
+      "version": "8.0.2",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "81cabf2857a01351e5ab578947c7403a5b128ad1"
+      },
+      "notice_files": [
+        "dotnet-runtime/LICENSE.txt",
+        "dotnet-runtime/THIRD-PARTY-NOTICES.txt"
+      ]
+    },
+    {
+      "package": "Microsoft.Extensions.Logging.Abstractions",
+      "version": "8.0.3",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "eba546b0f0d448e0176a2222548fd7a2fbf464c0"
+      },
+      "notice_files": [
+        "dotnet-runtime/LICENSE.txt",
+        "dotnet-runtime/THIRD-PARTY-NOTICES.txt"
+      ]
+    },
+    {
+      "package": "SharpCompress",
+      "version": "0.50.1",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/adamhathcock/sharpcompress",
+        "commit": "6062623dd8856b01d3afa18831bd5cfe1a58130f"
+      },
+      "notice_files": [
+        "SharpCompress/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "SkiaSharp",
+      "version": "3.119.4",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://go.microsoft.com/fwlink/?linkid=868515",
+        "branch": "release/3.119.4",
+        "commit": "f568ac94dd768ef9a2f593537cfde2dd0d348ef5"
+      },
+      "notice_files": [
+        "SkiaSharp/LICENSE.txt",
+        "Skia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "SkiaSharp.NativeAssets.Win32",
+      "version": "3.119.4",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://go.microsoft.com/fwlink/?linkid=868515",
+        "branch": "release/3.119.4",
+        "commit": "f568ac94dd768ef9a2f593537cfde2dd0d348ef5"
+      },
+      "notice_files": [
+        "SkiaSharp/LICENSE.txt",
+        "Skia/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "SSH.NET",
+      "version": "2026.0.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/sshnet/SSH.NET",
+        "commit": "7b2fd3dbf2c86a80a7b06cea020aa5f821c9902e"
+      },
+      "notice_files": [
+        "SSH.NET/LICENSE.txt"
+      ]
+    },
+    {
+      "package": "System.IO.Pipelines",
+      "version": "8.0.0",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "5535e31a712343a63f5d7d796cd874e563e5ac14"
+      },
+      "notice_files": [
+        "dotnet-runtime/LICENSE.txt",
+        "dotnet-runtime/THIRD-PARTY-NOTICES.txt"
+      ]
+    },
+    {
+      "package": "Tmds.DBus.Protocol",
+      "version": "0.94.1",
+      "kind": "package",
+      "nuget_license": "MIT",
+      "source_repository": {
+        "type": "git",
+        "url": "https://github.com/tmds/Tmds.DBus.git",
+        "branch": "refs/heads/main",
+        "commit": "b4a7fed0b878f74cb54f7cca84d2889af4e596ba"
+      },
+      "notice_files": [
+        "Tmds.DBus/LICENSE.txt"
+      ]
+    }
+  ],
+  "notices": [
+    {
+      "file": "Avalonia/LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/AvaloniaUI/Avalonia/a21b9f573172f705a944dcc8aad7f036b9986f39/licence.md",
+      "license": "MIT",
+      "sha256": "213814d306090074d234d760239ff0f67eb9b8d20eefb4d5631bb39dbe0b769b",
+      "bytes": 1096
+    },
+    {
+      "file": "ANGLE/LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/AvaloniaUI/angle/1c89805903c1482166356d3b950d474973180e61/LICENSE",
+      "license": "BSD-3-Clause",
+      "sha256": "bf4da21bd20bcfb5b60b7ecc67fa864a79be049e21d6178076887f178dd6c71a",
+      "bytes": 1643
+    },
+    {
+      "file": "BouncyCastle/LICENSE.md",
+      "source": "https://raw.githubusercontent.com/bcgit/bc-csharp/4007498b13582d90ee1eda5d9920c324428b98b3/LICENSE.md",
+      "license": "MIT",
+      "sha256": "0e01f1549c9022f406392ac2947d32223b7c2e977d21ea2f8c182fdeb4dae5fd",
+      "bytes": 1171
+    },
+    {
+      "file": "SSH.NET/LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/sshnet/SSH.NET/7b2fd3dbf2c86a80a7b06cea020aa5f821c9902e/LICENSE",
+      "license": "MIT",
+      "sha256": "84c79a38515de2833a7c353395e04056c0cbd77545d450fe216d569e1570b78e",
+      "bytes": 1117
+    },
+    {
+      "file": "SharpCompress/LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/adamhathcock/sharpcompress/6062623dd8856b01d3afa18831bd5cfe1a58130f/LICENSE.txt",
+      "license": "MIT",
+      "sha256": "b7ca2b6174cee11afe41d78b48527e3d7659a4435c25019a4a5e072299a2f8ed",
+      "bytes": 1081
+    },
+    {
+      "file": "SkiaSharp/LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/mono/SkiaSharp/f568ac94dd768ef9a2f593537cfde2dd0d348ef5/LICENSE.txt",
+      "license": "MIT",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77",
+      "bytes": 1110
+    },
+    {
+      "file": "HarfBuzzSharp/LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/mono/SkiaSharp/2888c737ad016d584c74525e2d35db5097ea8576/LICENSE.txt",
+      "license": "MIT",
+      "sha256": "bc2eb4f37d574f9b1b67da2b17e14d151618850527d78f7323239e7518df5b77",
+      "bytes": 1110
+    },
+    {
+      "file": "MicroCom/LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/kekekeks/MicroCom/76785efcafd91b5902fd19dd11145f6dd655b7b4/LICENSE",
+      "license": "MIT",
+      "sha256": "6ee769c9ac4dac9abb16b98b1341e9528ff9f4ab685481410d3376d14148f3a9",
+      "bytes": 1072
+    },
+    {
+      "file": "Tmds.DBus/LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/tmds/Tmds.DBus/b4a7fed0b878f74cb54f7cca84d2889af4e596ba/COPYING",
+      "license": "MIT",
+      "sha256": "aca3b49277abcc7886ccb2f115603a9f5b15fc3f96019a10c00f2974098b210c",
+      "bytes": 1151
+    },
+    {
+      "file": "dotnet-runtime/LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/dotnet/runtime/18fd75c847399745c43b5970fec840ba71064e80/LICENSE.TXT",
+      "license": "MIT",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310",
+      "bytes": 1116
+    },
+    {
+      "file": "dotnet-runtime/THIRD-PARTY-NOTICES.txt",
+      "source": "https://raw.githubusercontent.com/dotnet/runtime/18fd75c847399745c43b5970fec840ba71064e80/THIRD-PARTY-NOTICES.TXT",
+      "license": "upstream-notices",
+      "sha256": "97c1a7b3da6a4c6ad516448719f45114b41a4d4c5aa300a944476e2e4f5da438",
+      "bytes": 67638
+    },
+    {
+      "file": "Skia/LICENSE.txt",
+      "source": "https://raw.githubusercontent.com/mono/skia/7dbfc07dd33181f84e0958afb7ee805c6c769f0b/LICENSE",
+      "license": "BSD-3-Clause",
+      "sha256": "5f787c1dee3c56547f09ccc2906ab5f5293c4d8dd6c8654e573216c38e908dbd",
+      "bytes": 1507
+    },
+    {
+      "file": "HarfBuzz/COPYING.txt",
+      "source": "https://raw.githubusercontent.com/harfbuzz/harfbuzz/8.3.1/COPYING",
+      "license": "MIT-style",
+      "sha256": "ba8f810f2455c2f08e2d56bb49b72f37fcf68f1f4fade38977cfd7372050ad64",
+      "bytes": 1971
+    }
+  ]
+}

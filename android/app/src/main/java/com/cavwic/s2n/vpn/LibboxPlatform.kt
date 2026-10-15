@@ -30,6 +30,7 @@ import io.nekohasekai.libbox.NetworkInterface as BoxNetworkInterface
 
 internal class LibboxPlatform(private val service: S2NVpnService) : PlatformInterface {
     val networkMonitor = PhysicalNetworkMonitor(service)
+    private val localDns = PhysicalDnsTransport(networkMonitor)
     private val connectivity = service.getSystemService(ConnectivityManager::class.java)
 
     override fun usePlatformAutoDetectInterfaceControl(): Boolean = true
@@ -89,6 +90,7 @@ internal class LibboxPlatform(private val service: S2NVpnService) : PlatformInte
 
     override fun useProcFS(): Boolean = Build.VERSION.SDK_INT < 29
 
+    @android.annotation.TargetApi(29)
     override fun findConnectionOwner(
         ipProtocol: Int,
         sourceAddress: String,
@@ -154,8 +156,15 @@ internal class LibboxPlatform(private val service: S2NVpnService) : PlatformInte
         return BoxInterfaces(result.iterator())
     }
 
-    // Numeric upstream DNS servers in S2N's config do not need an Android resolver.
-    override fun localDNSTransport(): LocalDNSTransport? = null
+    override fun localDNSTransport(): LocalDNSTransport = localDns
+
+    fun close() {
+        try {
+            localDns.close()
+        } finally {
+            networkMonitor.close()
+        }
+    }
     override fun underNetworkExtension(): Boolean = false
     override fun includeAllNetworks(): Boolean = false
     override fun readWIFIState(): WIFIState? = null

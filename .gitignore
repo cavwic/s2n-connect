@@ -38,3 +38,4 @@ android/.core-build/
 android/local.properties
 android/**/build/
 android/app/libs/*.aar
+android/app/libs/*.aar.sha256

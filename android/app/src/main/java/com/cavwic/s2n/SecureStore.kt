@@ -11,7 +11,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-/** Connection credentials stay encrypted at rest with a non-exportable Android Keystore key. */
+/** Saved profiles are encrypted with a non-exportable Android Keystore key. */
 class SecureStore(context: Context) {
     private val prefs = context.getSharedPreferences("connection", Context.MODE_PRIVATE)
     private fun key(): SecretKey {

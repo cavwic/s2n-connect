@@ -120,7 +120,15 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
           chmod 600 "$ANDROID_KEYSTORE_PATH"
           bash ./gradlew --no-daemon :app:assembleRelease
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
+          signing_report=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk)
+          printf '%s\n' "$signing_report"
+          expected=$(tr -d '[:space:]:' < SIGNING_CERTIFICATE.sha256 | tr '[:upper:]' '[:lower:]')
+          actual=$(printf '%s\n' "$signing_report" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | tr -d '[:space:]:' | tr '[:upper:]' '[:lower:]')
+          signer_count=$(printf '%s\n' "$signing_report" | grep -cE '^Signer #[0-9]+ certificate SHA-256 digest: ' || true)
+          if [[ ! "$expected" =~ ^[0-9a-f]{64}$ ]] || [[ "$actual" != "$expected" ]] || [[ "$signer_count" != 1 ]]; then
+            echo '::error::APK signing certificate does not match android/SIGNING_CERTIFICATE.sha256.'
+            exit 1
+          fi
       - name: Prepare APK artifact
         id: package
         env:
@@ -192,7 +200,12 @@ jobs:
           profile: pixel_7_pro
           disable-animations: true
           emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd android && bash ./gradlew --no-daemon :app:connectedDebugAndroidTest
+          script: >-
+            bash -c 'set +e; cd android || exit $?;
+            bash ./gradlew --no-daemon :app:connectedDebugAndroidTest; gradle_status=$?;
+            mkdir -p app/build/reports/androidTests;
+            adb pull /sdcard/Android/data/com.cavwic.s2n.debug/files/screenshots app/build/reports/androidTests/screenshots || true;
+            exit "$gradle_status"'
       - name: Upload emulator test reports
         if: always()
         uses: actions/upload-artifact@v7

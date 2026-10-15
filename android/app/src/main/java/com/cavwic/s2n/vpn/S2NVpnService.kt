@@ -93,7 +93,7 @@ class S2NVpnService : VpnService(), CommandServerHandler {
     @Volatile private var currentStartId = 0
     @Volatile private var activeGeneration = 0L
     private var core: CommandServer? = null
-    private var platform: LibboxPlatform? = null
+    @Volatile private var platform: LibboxPlatform? = null
     private var tun: ParcelFileDescriptor? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -151,6 +151,9 @@ class S2NVpnService : VpnService(), CommandServerHandler {
             }
             stage = "tun"
             check(synchronized(tunLock) { tun != null })
+            // Runtime service state is held by libbox; its crash-report snapshot
+            // is not required for this client's explicit restart/reload policy.
+            File(noBackupFilesDir, "libbox/configuration.json").delete()
             showForeground(text("VPN 已运行", "VPN running"))
             sendStatus(
                 STATE_RUNNING,
@@ -196,6 +199,8 @@ class S2NVpnService : VpnService(), CommandServerHandler {
     private fun stop(token: Long, startId: Int) {
         if (!isCurrent(token)) return
         val closed = closeResources()
+        // A newer start may have arrived while native shutdown was in progress.
+        if (!isCurrent(token)) return
         removeForeground()
         sendStatus(
             if (closed) STATE_STOPPED else STATE_ERROR,
@@ -218,7 +223,7 @@ class S2NVpnService : VpnService(), CommandServerHandler {
         runCatching { descriptor?.close() }.onFailure { success = false }
         val adapter = platform
         platform = null
-        runCatching { adapter?.networkMonitor?.close() }.onFailure { success = false }
+        runCatching { adapter?.close() }.onFailure { success = false }
         runCatching { setUnderlyingNetworks(null) }.onFailure { success = false }
         // libbox writes its own snapshot; keep it private and remove it after use.
         File(noBackupFilesDir, "libbox/configuration.json").delete()
@@ -302,7 +307,7 @@ class S2NVpnService : VpnService(), CommandServerHandler {
     }
 
     private fun text(chinese: String, english: String): String =
-        if (resources.configuration.locales[0].language == "zh") chinese else english
+        if (getSharedPreferences("ui", MODE_PRIVATE).getBoolean("english", false)) english else chinese
 
     // Optional command-server features are deliberately unavailable in this client.
     override fun serviceStop() {

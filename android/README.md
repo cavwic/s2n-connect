@@ -11,6 +11,7 @@
 Android 端连接已经部署的 VPS，不执行 SSH 或 VPS 部署。在桌面端部署并导出手机配置后，
 可导入 JSON 文件、粘贴 JSON／`vless://` 链接，或填写连接参数。导出的配置包含连接凭据，
 请私密传输并保管。界面默认中文，可切换英文；主题默认跟随系统，也可选择浅色或深色。
+当前协议为 TCP / VLESS + REALITY（`xtls-rprx-vision`），不支持其他 VLESS 传输方式。
 
 ### 固定构建环境
 
@@ -62,6 +63,7 @@ Android 应用与捆绑 libbox 的组合按 **GPL-3.0-or-later** 分发，完整
 This is the native Kotlin client, with application ID `com.cavwic.s2n` and debug
 ID `com.cavwic.s2n.debug`. It supports Android 8.0+; one universal APK includes
 `arm64-v8a` and `x86_64` native cores.
+The supported protocol is TCP / VLESS + REALITY with `xtls-rprx-vision`.
 
 Android connects to an existing VPS and does not perform SSH or server deployment.
 Deploy the server with the desktop app, then import its exported mobile JSON

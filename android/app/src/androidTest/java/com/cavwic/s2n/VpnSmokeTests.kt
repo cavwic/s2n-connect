@@ -13,6 +13,7 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
 import com.cavwic.s2n.vpn.S2NVpnService
+import java.io.File
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -35,6 +36,8 @@ class VpnSmokeTests {
     @Test fun languageThemeAndProfileImportScreens() {
         context.getSharedPreferences("ui", 0).edit().clear().commit()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            instrumentation.waitForIdleSync()
+            screenshot("01-chinese-system.png")
             scenario.onActivity { activity ->
                 assertEquals("S2N Connect", activity.title)
                 activity.findViewById<android.widget.EditText>(R.id.profile_import).setText(example.toJson().toString())
@@ -50,7 +53,13 @@ class VpnSmokeTests {
             assertNotNull(device.wait(Until.findObject(By.text("Dark")), 5000))
             device.findObject(By.text("Dark")).click()
             instrumentation.waitForIdleSync()
+            screenshot("02-english-dark.png")
         }
+    }
+
+    private fun screenshot(name: String) {
+        val directory = File(context.getExternalFilesDir(null), "screenshots").apply { mkdirs() }
+        assertTrue("UI screenshot must be written", device.takeScreenshot(File(directory, name)))
     }
 
     @Test fun authorizedSyntheticTunStartsAndStops() {
@@ -65,16 +74,21 @@ class VpnSmokeTests {
         }
         // Direct-only fixture exercises native libbox + VpnService TUN, without contacting a VPS.
         val fixture = """{"log":{"level":"fatal"},"inbounds":[{"type":"tun","tag":"test-tun","address":["172.19.0.1/30","fdfe:dcba:9876::1/126"],"auto_route":true,"stack":"mixed"}],"outbounds":[{"type":"direct","tag":"direct"}],"route":{"auto_detect_interface":true,"final":"direct"}}"""
+        val manager = context.getSystemService(ConnectivityManager::class.java)
+        fun vpnNetworks() = manager.allNetworks.filter {
+            manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
+        }.toSet()
+        val existingVpnNetworks = vpnNetworks()
         try {
             context.startForegroundService(Intent(context, S2NVpnService::class.java)
                 .setAction(S2NVpnService.ACTION_START).putExtra(S2NVpnService.CONFIG_JSON, fixture))
             waitFor(20000) { S2NVpnService.currentState == "RUNNING" || S2NVpnService.currentState == "ERROR" }
             assertEquals("RUNNING", S2NVpnService.currentState)
-            val manager = context.getSystemService(ConnectivityManager::class.java)
-            waitFor(10000) { manager.allNetworks.any { manager.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true } }
+            waitFor(10000) { (vpnNetworks() - existingVpnNetworks).isNotEmpty() }
         } finally {
             context.startService(Intent(context, S2NVpnService::class.java).setAction(S2NVpnService.ACTION_STOP))
             waitFor(15000) { S2NVpnService.currentState == "STOPPED" }
+            waitFor(10000) { (vpnNetworks() - existingVpnNetworks).isEmpty() }
         }
     }
 

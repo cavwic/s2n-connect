@@ -13,3 +13,9 @@
 - [ ] Sign and notarize macOS artifacts.
 - [ ] Publish SHA-256 and artifact attestations.
 - [ ] Review third-party notices and licenses.
+- [ ] Android lint, JVM profile/config tests and debug APK build pass.
+- [ ] Android emulator imports profiles, switches language/theme and parses production core configurations.
+- [ ] Android emulator authorizes, establishes and stops a direct-only synthetic TUN.
+- [ ] Release APK contains ARM64 and x86_64 native libraries and uses the expected persistent certificate.
+- [ ] On a physical Android device, verify a real VPS connection, proxy access, LAN access, network switching and Stop cleanup.
+- [ ] Publish all seven packages, their individual SHA-256 files, and combined `SHA256SUMS`.
