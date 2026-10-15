@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0-beta.2
+
+### Changed
+
+- Group technical documentation under `docs/`, community policies under `.github/`, and build helpers under `scripts/` to shorten the repository file list.
+- Preserve the documentation directory structure in desktop packages, including the banner, iOS guide, notices, and full license texts.
+- Resolve the repository location from the build scripts so they work when invoked from another directory.
+
 ## 0.3.0-beta.1
 
 ### Added

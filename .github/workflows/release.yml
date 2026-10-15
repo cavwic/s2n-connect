@@ -116,12 +116,7 @@ jobs:
       - name: Include desktop licenses and documentation
         shell: pwsh
         run: |
-          $s2nArtifactPath = "artifacts/${{ matrix.rid }}"
-          Copy-Item -LiteralPath @('LICENSE', 'README.md', 'README.en.md', 'THIRD_PARTY_NOTICES.md', 'SIGNING.md') -Destination $s2nArtifactPath
-          if (!(Test-Path -LiteralPath 'docs/licenses' -PathType Container)) {
-            throw 'Release packaging requires the full third-party license texts in docs/licenses.'
-          }
-          Copy-Item -LiteralPath 'docs/licenses' -Destination (Join-Path $s2nArtifactPath 'licenses') -Recurse
+          ./scripts/copy-release-docs.ps1 -OutputPath "artifacts/${{ matrix.rid }}"
 
       - name: Archive and checksum on Windows
         if: matrix.archive == 'zip'
@@ -231,10 +226,10 @@ jobs:
             const fs = require('node:fs');
             const tag = process.env.RELEASE_TAG;
             const version = tag.slice(1);
-            const changelog = fs.readFileSync('CHANGELOG.md', 'utf8').replace(/\r\n/g, '\n');
+            const changelog = fs.readFileSync('docs/development/CHANGELOG.md', 'utf8').replace(/\r\n/g, '\n');
             const entry = changelog.split(/^## /m).slice(1)
               .find(section => section.split('\n')[0].trim() === version);
-            if (!entry) throw new Error(`CHANGELOG.md has no section for ${version}.`);
+            if (!entry) throw new Error(`docs/development/CHANGELOG.md has no section for ${version}.`);
             const body = fs.readFileSync('docs/release-description.md', 'utf8').trim().replaceAll('{{TAG}}', tag);
             let release;
             try {

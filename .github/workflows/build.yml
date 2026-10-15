@@ -84,12 +84,7 @@ jobs:
       - name: Include desktop licenses and documentation
         shell: pwsh
         run: |
-          $s2nArtifactPath = "artifacts/${{ matrix.rid }}"
-          Copy-Item -LiteralPath @('LICENSE', 'README.md', 'README.en.md', 'THIRD_PARTY_NOTICES.md', 'SIGNING.md') -Destination $s2nArtifactPath
-          if (!(Test-Path -LiteralPath 'docs/licenses' -PathType Container)) {
-            throw 'Desktop packaging requires the full third-party license texts in docs/licenses.'
-          }
-          Copy-Item -LiteralPath 'docs/licenses' -Destination (Join-Path $s2nArtifactPath 'licenses') -Recurse
+          ./scripts/copy-release-docs.ps1 -OutputPath "artifacts/${{ matrix.rid }}"
 
       - name: Archive Windows
         if: matrix.archive == 'zip'

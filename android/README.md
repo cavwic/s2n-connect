@@ -49,14 +49,14 @@ bash ./gradlew --no-daemon :app:lintDebug :app:testDebugUnitTest :app:assembleDe
 
 Beta 分发使用非调试 APK，并用同一持久私钥签名；后续更新需要兼容的签名证书和递增的
 `versionCode`。请私密备份密钥，勿提交到 Git。CI 签名所需的四个 secrets 和本地环境变量见
-[发布指南](../GITHUB_PUBLISHING.md#android-release-signing)。调试 APK 不使用发布密钥。
+[发布指南](../docs/development/GITHUB_PUBLISHING.md#android-release-signing)。调试 APK 不使用发布密钥。
 
 Android 应用与捆绑 libbox 的组合按 **GPL-3.0-or-later** 分发，完整文本见
 [LICENSE](LICENSE)，APK 内的开源许可页保留版权和源码入口。对应应用源码是本仓库相应发布标签的
 `android/` 目录；核心对应源码为
 [固定 sing-box 提交](https://github.com/SagerNet/sing-box/tree/7054cac5124465ffdb145870d7c01885566711b1)，
 构建入口为 [build-libbox.sh](scripts/build-libbox.sh)。桌面端仍使用根目录 MIT 许可。
-详见[第三方说明](../THIRD_PARTY_NOTICES.md)。
+详见[第三方说明](../docs/THIRD_PARTY_NOTICES.md)。
 
 ## English
 
@@ -95,7 +95,7 @@ validate proxy networking. Consult the CI report for actual test results.
 
 Distribution APKs are non-debuggable and signed with one persistent project key.
 Updates require a compatible signing certificate and an increasing `versionCode`.
-Back up the private key outside Git. See the [signing instructions](../GITHUB_PUBLISHING.md#android-release-signing)
+Back up the private key outside Git. See the [signing instructions](../docs/development/GITHUB_PUBLISHING.md#android-release-signing)
 for the four CI secrets and local signing environment variables. Debug builds do
 not receive the release key.
 
@@ -104,4 +104,4 @@ The app's open-source screen retains notices and source links. Corresponding app
 source is `android/` at the matching repository release tag. Corresponding core
 source is the [pinned sing-box commit](https://github.com/SagerNet/sing-box/tree/7054cac5124465ffdb145870d7c01885566711b1),
 built with [build-libbox.sh](scripts/build-libbox.sh). Desktop code retains the
-root MIT license. See [third-party notices](../THIRD_PARTY_NOTICES.md).
+root MIT license. See [third-party notices](../docs/THIRD_PARTY_NOTICES.md).

@@ -7,8 +7,8 @@ android {
         applicationId = "com.cavwic.s2n"
         minSdk = 26
         targetSdk = 36
-        versionCode = 30001
-        versionName = "0.3.0-beta.1"
+        versionCode = 30002
+        versionName = "0.3.0-beta.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
     }

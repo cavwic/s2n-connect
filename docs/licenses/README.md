@@ -6,15 +6,16 @@ dependency versions, immutable source revisions, source URLs, and SHA-256 hashes
 of the notice files. The baseline dependency inventory comes from the actual
 `artifacts/win-x64/S2N.deps.json` publish output and local NuGet package metadata.
 
-Copy this whole directory into `licenses/` in every desktop archive, together
-with the repository's root `LICENSE`, bilingual README files, and
-`THIRD_PARTY_NOTICES.md`. License texts remain unmodified. Runtime and native
+Copy this whole directory into `docs/licenses/` in every desktop archive, together
+with the repository's root [LICENSE](../../LICENSE) and [README](../../README.md),
+and the complete `docs/` directory, including the [English guide](../README.en.md)
+and [third-party notices](../THIRD_PARTY_NOTICES.md). License texts remain unmodified. Runtime and native
 component notices apply to the platform assets included in that archive.
 
 The desktop application does not bundle sing-box or Xray. Their downloaded
 components retain their own upstream licenses. Android's bundled libbox and
-GPL licensing are documented separately in the root third-party notices and
-Android project; this desktop inventory does not replace those obligations.
+GPL licensing are documented separately in the [third-party notices](../THIRD_PARTY_NOTICES.md)
+and Android project; this desktop inventory does not replace those obligations.
 
 When changing dependency versions, review the new package metadata and refresh
 the corresponding source revisions, license files, and manifest hashes.

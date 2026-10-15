@@ -20,7 +20,7 @@ public sealed class GitHubReleaseClient
     {
         _httpClient = httpClient;
         _httpClient.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("S2N-Connect", "0.3.0-beta.1"));
+            new ProductInfoHeaderValue("S2N-Connect", "0.3.0-beta.2"));
         _httpClient.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue(
                 "application/vnd.github+json"));

@@ -2,7 +2,7 @@
 
 ## Desktop app
 
-The desktop app is licensed under the root [MIT License](LICENSE). It does not
+The desktop app is licensed under the root [MIT License](../LICENSE). It does not
 vendor a sing-box executable. When requested, it downloads an official release
 from [SagerNet/sing-box](https://github.com/SagerNet/sing-box), verifies the official
 SHA-256 checksum file or, when no checksum file is published, the GitHub release

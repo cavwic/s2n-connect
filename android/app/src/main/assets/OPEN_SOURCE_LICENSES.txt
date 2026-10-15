@@ -1,7 +1,7 @@
-S2N Connect Android 0.3.0-beta.1
+S2N Connect Android 0.3.0-beta.2
 Copyright (c) 2026 cavwic
 Android module: GPL-3.0-or-later
-Corresponding source: https://github.com/cavwic/s2n-connect/tree/v0.3.0-beta.1/android
+Corresponding source: https://github.com/cavwic/s2n-connect/tree/v0.3.0-beta.2/android
 Build instructions and toolchain: android/README.md and android/scripts/build-libbox.sh
 
 Includes sing-box / libbox 1.14.3

@@ -32,4 +32,4 @@ S2N Connect 用于在自有 VPS 上部署 VPN 服务，提供桌面端与 Androi
 
 配置文件含连接凭据，请勿公开分享。
 
-[许可与第三方说明](https://github.com/cavwic/s2n-connect/blob/main/THIRD_PARTY_NOTICES.md) · [签名说明](https://github.com/cavwic/s2n-connect/blob/main/SIGNING.md)
+[许可与第三方说明](https://github.com/cavwic/s2n-connect/blob/main/docs/THIRD_PARTY_NOTICES.md) · [签名说明](https://github.com/cavwic/s2n-connect/blob/main/docs/SIGNING.md)
