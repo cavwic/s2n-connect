@@ -262,10 +262,15 @@ class MainActivity : Activity() {
         super.onResume()
         val filter = IntentFilter(S2NVpnService.STATUS_CHANGED)
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(receiver, filter, RECEIVER_NOT_EXPORTED)
-        else @Suppress("DEPRECATION") registerReceiver(receiver, filter)
+        else registerLegacyStatusReceiver(filter)
         receiverRegistered = true
         updateStatus()
     }
+    // Called only below API 33, where RECEIVER_NOT_EXPORTED is unavailable.
+    // Intent data is ignored: the receiver only redraws the service's in-process state.
+    @android.annotation.SuppressLint("UnspecifiedRegisterReceiverFlag")
+    @Suppress("DEPRECATION")
+    private fun registerLegacyStatusReceiver(filter: IntentFilter) { registerReceiver(receiver, filter) }
     override fun onPause() {
         if (receiverRegistered) { unregisterReceiver(receiver); receiverRegistered = false }
         super.onPause()

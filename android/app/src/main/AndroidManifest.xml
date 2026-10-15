@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
@@ -16,8 +17,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Prepared VPN apps qualify for systemExempted without alarm permissions.
+             Lint's static alarm-permission check cannot see VpnService.prepare consent.
+             https://developer.android.com/develop/background-work/services/fgs/service-types#system-exempted -->
         <service android:name=".vpn.S2NVpnService" android:permission="android.permission.BIND_VPN_SERVICE"
-            android:foregroundServiceType="systemExempted" android:exported="true">
+            android:foregroundServiceType="systemExempted" android:exported="true"
+            tools:ignore="ForegroundServicePermission">
             <intent-filter><action android:name="android.net.VpnService" /></intent-filter>
             <meta-data android:name="android.net.VpnService.SUPPORTS_ALWAYS_ON" android:value="false" />
         </service>

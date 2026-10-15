@@ -18,3 +18,8 @@ Android project; this desktop inventory does not replace those obligations.
 
 When changing dependency versions, review the new package metadata and refresh
 the corresponding source revisions, license files, and manifest hashes.
+
+Run `python docs/licenses/verify.py` from the repository root to verify all
+checked-in notice hashes and dependency-to-notice mappings without networking.
+The directory's Git attributes retain LF line endings so hashes are stable on
+Windows, macOS, and Linux.
