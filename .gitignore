@@ -12,6 +12,7 @@ Thumbs.db
 **/settings.json
 **/vps-profile.json
 **/s2n-profile.json
+**/s2n-mobile-profile.json
 **/config.json
 **/logs/
 *.log
@@ -29,3 +30,11 @@ id_ed25519
 .env
 .env.*
 secrets.json
+
+# Android generated files (the pinned VPN core is built in CI)
+android/.gradle/
+android/.kotlin/
+android/.core-build/
+android/local.properties
+android/**/build/
+android/app/libs/*.aar

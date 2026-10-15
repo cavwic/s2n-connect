@@ -5,9 +5,9 @@
 
 **给你的 VPS 增加 VPN 功能。**
 
-这就是 S2N 的命名含义。S2N Connect 是管理自有 VPS 连接的跨平台桌面工具：在 VPS 上部署 Xray 的 **VLESS + REALITY** 服务，在本机使用 **sing-box TUN** 接管流量，并按程序、域名或全局模式分流。你需要自备 VPS；这里提供的是部署与连接管理软件。
+这就是 S2N 的命名含义。S2N Connect 提供桌面端和 Android 客户端。桌面端可在自有 VPS 上部署 Xray 的 **VLESS + REALITY** 服务，并在本机使用 **sing-box TUN** 分流；Android 端导入桌面端导出的配置，连接已经部署的 VPS。你需要自备 VPS。
 
-[下载 Alpha 版本](https://github.com/cavwic/s2n-connect/releases) · [更新记录](CHANGELOG.md) · [报告问题](https://github.com/cavwic/s2n-connect/issues)
+[下载 Beta 版本](https://github.com/cavwic/s2n-connect/releases) · [更新记录](CHANGELOG.md) · [报告问题](https://github.com/cavwic/s2n-connect/issues)
 
 ## 平台
 
@@ -16,12 +16,13 @@
 | Windows 10 / 11 | x64、ARM64 | `.zip` |
 | macOS 13+ | Intel、Apple silicon | `.tar.gz` |
 | Linux 桌面（包括 Ubuntu） | x64、ARM64 | `.tar.gz` |
+| Android 8.0+ | ARM64、x86_64 | universal `.apk` |
 
-以上对应六个发布构建目标。跨平台编译、打包通过不代表各系统的提权和 TUN 联网已经完成实机验证，具体限制见下文。
+发布包含六个桌面目标和一个 Android 通用 APK。编译、打包和模拟器界面测试通过不代表各系统的 VPS 联网与 TUN 已完成实机验证，具体限制见下文。
 
-**VPS：** 当前 Alpha 的部署目标为带 systemd 的 Ubuntu / Debian，需通过 root 用户进行 SSH 连接。
+**VPS：** 当前 Beta 的部署目标为带 systemd 的 Ubuntu / Debian，需通过 root 用户进行 SSH 连接。
 
-## 主要功能
+## 桌面端主要功能
 
 - **部署与安装：** 可一键部署本机 sing-box 和 VPS 服务，也可分别操作。自动识别系统、架构；安装目录由你选择，下载包通过 SHA-256 校验后解压，验证可执行文件后保存路径，并清理临时下载文件。
 - **SSH 连接：** 自定义 SSH 用户和端口，从任意本地目录选择私钥并按内容验证格式；首次连接需核对服务器指纹，后续指纹变化会拒绝连接。私钥路径仅在连接成功后保存，私钥口令不落盘。
@@ -51,6 +52,14 @@
 
 首次成功连接后，可再按需开启自动连接和登录启动。自动连接不会代填加密 SSH 私钥口令；日常连接使用已部署的 VPS 配置。
 
+## Android 使用
+
+1. 在桌面端部署或配置好 VPS，使用移动端配置导出功能保存连接配置。导出文件含连接凭据，请通过可信方式传到自己的手机。
+2. 安装发布中的 `android-universal.apk`，导入该配置。Android 端连接现有 VPS，不执行 SSH 部署。
+3. 点击连接并确认 Android 的 VPN 授权；停止时使用应用中的停止按钮。Android 同时只允许一个 VPN 应用接管流量。
+
+APK 同时包含 ARM64 和 x86_64 的原生核心，使用项目持久签名密钥签名。模拟器测试覆盖界面、VPN 授权及仅直连测试配置的真实 TUN 启停，不连接 VPS，也不验证代理联网。
+
 ## 构建与验证
 
 开发构建使用 **.NET 10 SDK** 和 **Avalonia 12**，应用目标框架为 `net8.0`。发布包为 self-contained，终端用户无需另装 .NET。
@@ -74,20 +83,33 @@ dotnet publish src/S2N.App/S2N.App.csproj \
 
 配置回归检查使用独立临时目录，验证分流、DNS 和设置中的关键约束，不连接 VPS、不启动实际 TUN。其他发布目标为 `win-arm64`、`osx-x64`、`osx-arm64`、`linux-x64`、`linux-arm64`。
 
-## Alpha 限制与发布校验
+### Android 构建
 
-- 当前为 Alpha。真实 VPS 连接、局域网访问、停止后的路由与 DNS 恢复，仍需按[发布检查清单](RELEASE_CHECKLIST.md)在各平台实测；不要将构建通过视为联网功能验证通过。
+`android/` 是原生 Kotlin 项目，使用 JDK 17、Gradle 9.6、AGP 9.4、SDK 36 和 NDK 28.0.13004108。使用 Go 1.26.8 从固定的官方 sing-box 源码构建 libbox，再构建 APK：
+
+```bash
+bash android/scripts/build-libbox.sh
+cd android
+bash ./gradlew :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
+```
+
+正式 APK 需要私有签名配置，步骤见[发布指南](GITHUB_PUBLISHING.md)。固定核心版本和许可见[第三方说明](THIRD_PARTY_NOTICES.md)。
+
+## Beta 限制与发布校验
+
+- 当前为 Beta。真实 VPS 连接、局域网访问、停止后的路由与 DNS 恢复，仍需按[发布检查清单](RELEASE_CHECKLIST.md)在各平台实测；不要将构建通过视为联网功能验证通过。
 - Windows 提权是当前主要实现；macOS 的 `osascript` 与 Linux 的 `pkexec` 路径仍需更多实机验证。其他 VPS 发行版尚未纳入部署支持，IPv6 行为也需单独验证。
-- 当前发布包未签名，macOS 包未公证，系统可能显示信任提示。SHA-256 和 GitHub 溯源证明不替代平台签名，详见[签名说明](SIGNING.md)。
-- GitHub Actions 等待六个平台包全部构建成功并验证 SHA-256 后发布；Alpha 标签标为预发布。CodeQL 与 artifact attestations 受仓库可用功能限制，运行或跳过状态以工作流摘要为准。
+- Android APK 使用项目发布密钥签名；桌面发布包未签名，macOS 包未公证，系统可能显示信任提示。SHA-256 和 GitHub 溯源证明不替代平台签名，详见[签名说明](SIGNING.md)。
+- GitHub Actions 等待六个桌面包、Android APK 和 Android 模拟器检查全部成功并验证 SHA-256 后发布；Beta 标签标为预发布。CodeQL 与 artifact attestations 受仓库可用功能限制，运行或跳过状态以工作流摘要为准。
 - 连通性与 IP 信息查询会访问 Google、Cloudflare 和 IP 查询服务；配置文件含客户端连接凭据，请勿公开上传。私钥内容不保存到应用设置中，具体见[安全说明](SECURITY.md)。
 
 ## 许可与项目文档
 
-S2N Connect 使用 [MIT 许可证](LICENSE)。sing-box、Xray 及其他依赖遵循各自上游许可证，参见[第三方说明](THIRD_PARTY_NOTICES.md)。
+桌面端使用 [MIT 许可证](LICENSE)。Android 应用与 libbox 的组合按 **GPL-3.0-or-later** 分发；该许可不改变桌面端的 MIT 许可。sing-box、Xray 及其他依赖遵循各自上游许可证，参见[第三方说明](THIRD_PARTY_NOTICES.md)。
 
 [架构](ARCHITECTURE.md) · [参与贡献](CONTRIBUTING.md) · [GitHub 发布指南](GITHUB_PUBLISHING.md) · [更新记录](CHANGELOG.md)
 
+<!-- Reserved promotion slots; hidden until content is ready.
 <table width="100%">
   <tr>
     <th width="50%">VPS 推荐</th>
@@ -98,3 +120,4 @@ S2N Connect 使用 [MIT 许可证](LICENSE)。sing-box、Xray 及其他依赖遵
     <td><br><br><br></td>
   </tr>
 </table>
+-->

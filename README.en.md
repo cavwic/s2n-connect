@@ -5,9 +5,9 @@
 
 **Add VPN functionality to your VPS.**
 
-That is the meaning behind the S2N name. S2N Connect is a cross-platform desktop tool for managing connections through your own VPS. It deploys an Xray **VLESS + REALITY** service on the server and uses **sing-box TUN** on your computer, with process, domain, or global routing. You supply the VPS; this project supplies the deployment and connection manager.
+That is the meaning behind the S2N name. S2N Connect provides desktop and Android clients for your own VPS. The desktop app deploys an Xray **VLESS + REALITY** service and uses **sing-box TUN** for local routing. The Android app imports a desktop-exported profile and connects to an existing VPS. You supply the VPS.
 
-[Download the alpha](https://github.com/cavwic/s2n-connect/releases) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/cavwic/s2n-connect/issues)
+[Download the beta](https://github.com/cavwic/s2n-connect/releases) · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/cavwic/s2n-connect/issues)
 
 ## Platforms
 
@@ -16,12 +16,13 @@ That is the meaning behind the S2N name. S2N Connect is a cross-platform desktop
 | Windows 10 / 11 | x64, ARM64 | `.zip` |
 | macOS 13+ | Intel, Apple silicon | `.tar.gz` |
 | Linux desktop, including Ubuntu | x64, ARM64 | `.tar.gz` |
+| Android 8.0+ | ARM64, x86_64 | universal `.apk` |
 
-These are the six release build targets. Successful compilation and packaging do not establish that privilege elevation and TUN networking have been validated on every platform. See the alpha limitations below.
+Releases include six desktop targets and one universal Android APK. Compilation, packaging, and emulator UI tests do not establish that real VPS connections and TUN networking have been validated on every platform. See the beta limitations below.
 
-**VPS:** This alpha deploys to Ubuntu / Debian servers with systemd and requires SSH login as root.
+**VPS:** This beta deploys to Ubuntu / Debian servers with systemd and requires SSH login as root.
 
-## Features
+## Desktop features
 
 - **Deployment and installation:** Deploy local sing-box and the VPS service together or separately. S2N detects the operating system and architecture, installs into your chosen directory, checks the package's SHA-256 before extraction, validates the executable before saving its path, and removes temporary downloads.
 - **SSH connections:** Configure the SSH user and port, select a private key from any local directory, and validate its format by content. Verify the server fingerprint on first use; later fingerprint changes are rejected. The key path is saved only after a successful connection, and key passphrases are never written to disk.
@@ -51,6 +52,14 @@ Installation prefers the official release's SHA-256 checksum file. When the rele
 
 After the first successful connection, enable auto-connect and start-at-sign-in if needed. Auto-connect does not supply an encrypted SSH key's passphrase; routine connections use the deployed VPS profile.
 
+## Android quick start
+
+1. Deploy or configure the VPS in the desktop app, then export a mobile connection profile. The file contains connection credentials; transfer it privately to your own device.
+2. Install the release's `android-universal.apk` and import the profile. Android connects to an existing VPS and does not perform SSH deployment.
+3. Tap Connect and confirm Android's VPN authorization. Use Stop to disconnect. Android allows only one VPN app to control routing at a time.
+
+The APK includes ARM64 and x86_64 native cores and is signed with the project's persistent release key. Emulator tests cover screens, VPN authorization, and real TUN start/stop using a direct-only fixture. They do not connect to a VPS or validate proxy connectivity.
+
 ## Build and validation
 
 Development builds use the **.NET 10 SDK** and **Avalonia 12**, while the application targets `net8.0`. Release packages are self-contained, so end users do not need to install .NET separately.
@@ -74,20 +83,33 @@ dotnet publish src/S2N.App/S2N.App.csproj \
 
 Configuration regression checks use isolated temporary storage to validate key routing, DNS, and settings constraints. They do not connect to a VPS or start an actual TUN interface. Other release targets are `win-arm64`, `osx-x64`, `osx-arm64`, `linux-x64`, and `linux-arm64`.
 
-## Alpha limitations and release integrity
+### Android build
 
-- This is an alpha. Real VPS connections, LAN access, and route/DNS restoration after stopping still need platform testing against the [release checklist](RELEASE_CHECKLIST.md). A successful build does not validate networking behavior.
+`android/` is a native Kotlin project using JDK 17, Gradle 9.6, AGP 9.4, SDK 36, and NDK 28.0.13004108. Build libbox from pinned official sing-box source with Go 1.26.8, then build the APK:
+
+```bash
+bash android/scripts/build-libbox.sh
+cd android
+bash ./gradlew :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
+```
+
+Distribution APKs require private signing configuration; see the [publishing guide](GITHUB_PUBLISHING.md). See [third-party notices](THIRD_PARTY_NOTICES.md) for the pinned core and license.
+
+## Beta limitations and release integrity
+
+- This is a beta. Real VPS connections, LAN access, and route/DNS restoration after stopping still need platform testing against the [release checklist](RELEASE_CHECKLIST.md). A successful build does not validate networking behavior.
 - Windows elevation is the primary implementation. The macOS `osascript` and Linux `pkexec` paths need more testing on actual systems. Other VPS distributions are outside the current deployment scope, and IPv6 behavior needs separate validation.
-- Current packages are unsigned, and macOS packages are not notarized, so operating systems may show trust warnings. SHA-256 and GitHub provenance do not replace platform signing; see the [signing notes](SIGNING.md).
-- GitHub Actions publishes only after all six platform packages build successfully and pass SHA-256 verification. Alpha tags are prereleases. CodeQL and artifact attestations depend on the repository's available GitHub features; workflow summaries record whether they ran or were skipped.
+- The Android APK is signed with the project release key. Desktop packages are unsigned, and macOS packages are not notarized, so operating systems may show trust warnings. SHA-256 and GitHub provenance do not replace platform signing; see the [signing notes](SIGNING.md).
+- GitHub Actions publishes only after all six desktop packages, the Android APK, and Android emulator checks succeed and the packages pass SHA-256 verification. Beta tags are prereleases. CodeQL and artifact attestations depend on the repository's available GitHub features; workflow summaries record whether they ran or were skipped.
 - Connectivity and IP lookups contact Google, Cloudflare, and IP information services. Generated profiles contain client credentials and must not be uploaded publicly. Application settings do not store private-key contents; see the [security policy](SECURITY.md).
 
 ## License and project documents
 
-S2N Connect is available under the [MIT License](LICENSE). sing-box, Xray, and other dependencies retain their respective upstream licenses; see the [third-party notices](THIRD_PARTY_NOTICES.md).
+The desktop app is available under the [MIT License](LICENSE). The Android app combined with libbox is distributed under **GPL-3.0-or-later**; this does not change the desktop app's MIT license. sing-box, Xray, and other dependencies retain their respective upstream licenses; see the [third-party notices](THIRD_PARTY_NOTICES.md).
 
 [Architecture](ARCHITECTURE.md) · [Contributing](CONTRIBUTING.md) · [GitHub publishing guide](GITHUB_PUBLISHING.md) · [Changelog](CHANGELOG.md)
 
+<!-- Reserved promotion slots; hidden until content is ready.
 <table width="100%">
   <tr>
     <th width="50%">VPS recommendations</th>
@@ -98,3 +120,4 @@ S2N Connect is available under the [MIT License](LICENSE). sing-box, Xray, and o
     <td><br><br><br></td>
   </tr>
 </table>
+-->

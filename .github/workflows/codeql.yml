@@ -11,6 +11,11 @@ on:
 permissions:
   contents: read
 
+env:
+  CORE_COMMIT: 7054cac5124465ffdb145870d7c01885566711b1
+  GO_VERSION: 1.26.8
+  NDK_VERSION: 28.0.13004108
+
 jobs:
   preflight:
     name: Check code scanning availability
@@ -28,7 +33,11 @@ jobs:
           script: |
             let available = false;
             let reason;
-            try {
+            if (!context.payload.repository.private) {
+              // Public projects can run their first analysis before the API has results.
+              available = true;
+              reason = 'Public repository: CodeQL analysis is enabled, including the initial scan.';
+            } else try {
               await github.request('GET /repos/{owner}/{repo}/code-scanning/analyses', {
                 ...context.repo,
                 per_page: 1
@@ -49,11 +58,15 @@ jobs:
               .write();
 
   analyze:
-    name: Analyze C# with CodeQL
+    name: Analyze ${{ matrix.language }} with CodeQL
     needs: preflight
     if: needs.preflight.outputs.available == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ csharp, java-kotlin ]
     permissions:
       security-events: write
       packages: read
@@ -61,14 +74,53 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-dotnet@v6
+        if: matrix.language == 'csharp'
         with:
           dotnet-version: 10.0.x
+      - name: Cache pinned Android libbox
+        if: matrix.language == 'java-kotlin'
+        id: core-cache
+        uses: actions/cache@v6
+        with:
+          path: android/app/libs/libbox.aar
+          key: libbox-${{ runner.os }}-${{ env.CORE_COMMIT }}-go${{ env.GO_VERSION }}-${{ hashFiles('android/scripts/build-libbox.sh') }}
+      - uses: actions/setup-java@v6
+        if: matrix.language == 'java-kotlin'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-go@v7
+        if: matrix.language == 'java-kotlin' && steps.core-cache.outputs.cache-hit != 'true'
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+      - uses: android-actions/setup-android@v4
+        if: matrix.language == 'java-kotlin'
+      - name: Install Android SDK
+        if: matrix.language == 'java-kotlin'
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Install pinned Android NDK
+        if: matrix.language == 'java-kotlin' && steps.core-cache.outputs.cache-hit != 'true'
+        run: sdkmanager "ndk;${NDK_VERSION}"
+      - name: Build pinned Android libbox
+        if: matrix.language == 'java-kotlin' && steps.core-cache.outputs.cache-hit != 'true'
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/$NDK_VERSION"
+          bash android/scripts/build-libbox.sh
+      - uses: gradle/actions/setup-gradle@v6
+        if: matrix.language == 'java-kotlin'
       - uses: github/codeql-action/init@v4
         with:
-          languages: csharp
+          languages: ${{ matrix.language }}
           build-mode: manual
       - run: dotnet restore
+        if: matrix.language == 'csharp'
       - run: dotnet build --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
+        if: matrix.language == 'csharp'
+      - name: Build Kotlin under CodeQL tracing
+        if: matrix.language == 'java-kotlin'
+        working-directory: android
+        run: bash ./gradlew --no-daemon --no-build-cache --rerun-tasks :app:assembleDebug
       - uses: github/codeql-action/analyze@v4
         with:
-          category: /language:csharp
+          category: /language:${{ matrix.language }}

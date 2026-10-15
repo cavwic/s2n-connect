@@ -126,6 +126,9 @@ public static class L10n
                 ["连接"] = "Connect",
                 ["停止"] = "Stop",
                 ["规则管理"] = "Rules",
+                ["导出手机配置"] = "Export mobile profile",
+                ["手机配置含连接凭据，请妥善保管。"] =
+                    "Mobile profiles contain connection credentials. Keep them private.",
                 ["刷新状态"] = "Refresh status",
                 ["退出"] = "Exit",
                 ["指定程序（每行一个）"] =

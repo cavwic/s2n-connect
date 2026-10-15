@@ -1,0 +1,9 @@
+<resources>
+    <item type="id" name="profile_import" />
+    <item type="id" name="import_button" />
+    <item type="id" name="connect_button" />
+    <item type="id" name="stop_button" />
+    <item type="id" name="status_text" />
+    <item type="id" name="language_button" />
+    <item type="id" name="theme_button" />
+</resources>

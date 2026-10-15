@@ -120,15 +120,18 @@
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="使用" FontSize="19" FontWeight="SemiBold"/>
-          <StackPanel Orientation="Horizontal" Spacing="8">
+          <WrapPanel Orientation="Horizontal" ItemSpacing="8" LineSpacing="8">
             <Button Classes="primary" x:Name="ConnectButton"
                     Content="连接" Click="Connect_Click"/>
             <Button x:Name="StopButton" Content="停止"
                     Click="Stop_Click"/>
             <Button Content="规则管理" Click="Rules_Click"/>
+            <Button Content="导出手机配置" Click="ExportMobileProfile_Click"/>
             <Button Content="刷新状态" Click="Refresh_Click"/>
             <Button Content="退出" Click="Exit_Click"/>
-          </StackPanel>
+          </WrapPanel>
+          <TextBlock Text="手机配置含连接凭据，请妥善保管。"
+                     Opacity="0.65" FontSize="12" TextWrapping="Wrap"/>
         </StackPanel>
       </Border>
     </StackPanel>

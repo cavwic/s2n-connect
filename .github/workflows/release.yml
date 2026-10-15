@@ -41,10 +41,27 @@ jobs:
             if (tag !== `v${version}`) {
               throw new Error(`Tag ${tag} does not match application version ${version}.`);
             }
+            const androidProject = fs.readFileSync('android/app/build.gradle.kts', 'utf8');
+            const androidVersion = androidProject.match(/versionName\s*=\s*"([^"]+)"/)?.[1];
+            if (androidVersion !== version) {
+              throw new Error(`Android version ${androidVersion} does not match desktop version ${version}.`);
+            }
       - name: Check routing and settings regressions
         run: dotnet run --project tests/S2N.ConfigChecks/S2N.ConfigChecks.csproj --configuration Release
       - name: Check release package integrity handling
         run: dotnet run --project tests/S2N.ReleaseChecks/S2N.ReleaseChecks.csproj --configuration Release
+
+  android:
+    name: Package and test Android
+    needs: validate
+    uses: ./.github/workflows/android.yml
+    with:
+      release: true
+    secrets:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
   build:
     name: Package ${{ matrix.rid }}
@@ -123,7 +140,7 @@ jobs:
 
   publish:
     name: Publish complete release
-    needs: build
+    needs: [ build, android ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -135,7 +152,7 @@ jobs:
       RELEASE_TAG: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v7
-      - name: Download all six packages
+      - name: Download all seven packages
         uses: actions/download-artifact@v8
         with:
           pattern: release-*
@@ -151,6 +168,7 @@ jobs:
             const tag = process.env.RELEASE_TAG;
             const rids = ['win-x64', 'win-arm64', 'osx-x64', 'osx-arm64', 'linux-x64', 'linux-arm64'];
             const archives = rids.map(rid => `S2N-${tag}-${rid}.${rid.startsWith('win-') ? 'zip' : 'tar.gz'}`);
+            archives.push(`S2N-${tag}-android-universal.apk`);
             const expected = archives.flatMap(name => [name, `${name}.sha256`]).sort();
             const actual = fs.readdirSync('dist').sort();
             if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -165,7 +183,7 @@ jobs:
             }
             fs.writeFileSync('dist/SHA256SUMS.txt', checksums.join('\n') + '\n');
             await core.summary.addHeading('Release packages verified')
-              .addRaw('All six platform archives and their SHA-256 files are present and verified.').write();
+              .addRaw('All six desktop archives, the Android APK, and their SHA-256 files are present and verified.').write();
 
       - name: Check attestation availability
         id: attestation
@@ -192,6 +210,7 @@ jobs:
           subject-path: |
             dist/*.zip
             dist/*.tar.gz
+            dist/*.apk
 
       - name: Upload all assets and publish
         uses: actions/github-script@v9
@@ -206,11 +225,12 @@ jobs:
             if (!entry) throw new Error(`CHANGELOG.md has no section for ${version}.`);
             const workflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const codeqlUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/workflows/codeql.yml`;
-            const body = `## ${entry.trim()}\n\n## Alpha validation and package notes\n\n` +
-              '- These packages are unsigned; macOS packages are not notarized.\n' +
-              '- Real VPS connections and TUN behavior have not been fully validated on physical Windows, macOS, and Linux systems.\n' +
-              '- CodeQL scanning and provenance attestations depend on the private repository\'s available GitHub features. ' +
-              'Their execution or skip status is recorded in workflow summaries; package checksums are verified separately.\n\n' +
+            const body = `## ${entry.trim()}\n\n## Beta validation and package notes\n\n` +
+              '- The Android APK is signed with the project release key. Desktop archives are unsigned; macOS packages are not notarized.\n' +
+              '- Android connects to an existing VPS using a desktop-exported profile. VPS deployment remains a desktop feature.\n' +
+              '- Android emulator tests cover UI, VPN authorization, and real TUN start/stop with a direct-only fixture, without connecting to a VPS. Full physical-device VPS/TUN validation remains incomplete across platforms.\n' +
+              '- The Android app combined with libbox is distributed under GPL-3.0-or-later; the desktop app remains MIT. Pinned core source and build instructions are in THIRD_PARTY_NOTICES.md and android/scripts/build-libbox.sh.\n' +
+              '- CodeQL and provenance execution or skip status is recorded in workflow summaries; package checksums are verified separately.\n\n' +
               `[Release workflow summary](${workflowUrl}) · [CodeQL workflow summaries](${codeqlUrl})`;
             let release;
             try {
@@ -248,7 +268,7 @@ jobs:
                 name,
                 data,
                 headers: {
-                  'content-type': name.endsWith('.zip') ? 'application/zip' : name.endsWith('.tar.gz') ? 'application/gzip' : 'text/plain',
+                  'content-type': name.endsWith('.zip') ? 'application/zip' : name.endsWith('.tar.gz') ? 'application/gzip' : name.endsWith('.apk') ? 'application/vnd.android.package-archive' : 'text/plain',
                   'content-length': data.length
                 }
               });
@@ -270,4 +290,4 @@ jobs:
             })).data;
             await core.summary.addHeading('Release published')
               .addLink(published.name, published.html_url)
-              .addRaw(`\n\n${names.length} verified assets published after all six builds succeeded.`).write();
+              .addRaw(`\n\n${names.length} verified assets published after all seven packages and Android smoke tests succeeded.`).write();

@@ -1,0 +1,205 @@
+name: Android build and smoke tests
+
+on:
+  workflow_call:
+    inputs:
+      release:
+        description: Build a signed distribution APK instead of a debug artifact
+        type: boolean
+        default: false
+    secrets:
+      ANDROID_KEYSTORE_BASE64:
+        required: false
+      ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      ANDROID_KEY_ALIAS:
+        required: false
+      ANDROID_KEY_PASSWORD:
+        required: false
+    outputs:
+      apk-artifact:
+        description: Artifact containing the tested Android APK
+        value: ${{ jobs.android-build.outputs.apk-artifact }}
+
+permissions:
+  contents: read
+
+env:
+  CORE_COMMIT: 7054cac5124465ffdb145870d7c01885566711b1
+  GO_VERSION: 1.26.8
+  NDK_VERSION: 28.0.13004108
+
+jobs:
+  android-core:
+    name: Build pinned Android VPN core
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - name: Cache pinned libbox
+        id: core-cache
+        uses: actions/cache@v6
+        with:
+          path: android/app/libs/libbox.aar
+          key: libbox-${{ runner.os }}-${{ env.CORE_COMMIT }}-go${{ env.GO_VERSION }}-${{ hashFiles('android/scripts/build-libbox.sh') }}
+      - uses: actions/setup-java@v6
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/setup-go@v7
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+      - uses: android-actions/setup-android@v4
+        if: steps.core-cache.outputs.cache-hit != 'true'
+      - name: Install pinned Android NDK
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        run: sdkmanager "ndk;${NDK_VERSION}" "platforms;android-36" "build-tools;36.0.0"
+      - name: Build libbox from pinned official source
+        if: steps.core-cache.outputs.cache-hit != 'true'
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/$NDK_VERSION"
+          bash android/scripts/build-libbox.sh
+      - name: Verify both native ABIs
+        run: |
+          set -euo pipefail
+          unzip -Z1 android/app/libs/libbox.aar | grep -E '^jni/arm64-v8a/.*\.so$'
+          unzip -Z1 android/app/libs/libbox.aar | grep -E '^jni/x86_64/.*\.so$'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: android-libbox
+          path: android/app/libs/libbox.aar
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  android-build:
+    name: Build Android application
+    needs: android-core
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      apk-artifact: ${{ steps.package.outputs.artifact }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: android-libbox
+          path: android/app/libs
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Install Android SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Lint, unit tests, and debug APK
+        working-directory: android
+        run: bash ./gradlew --no-daemon :app:lintDebug :app:testDebugUnitTest :app:assembleDebug
+      - name: Build signed release APK
+        if: inputs.release
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for key in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!key:-}" ]; then
+              echo "::error::Required Android release signing secret is missing: $key"
+              exit 1
+            fi
+          done
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/s2n-android-release.p12"
+          trap 'rm -f "$ANDROID_KEYSTORE_PATH"' EXIT
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE_PATH"
+          chmod 600 "$ANDROID_KEYSTORE_PATH"
+          bash ./gradlew --no-daemon :app:assembleRelease
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
+      - name: Prepare APK artifact
+        id: package
+        env:
+          DISTRIBUTION_RELEASE: ${{ inputs.release }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          mkdir -p android-dist
+          if [ "$DISTRIBUTION_RELEASE" = true ]; then
+            name="S2N-${RELEASE_TAG}-android-universal.apk"
+            cp android/app/build/outputs/apk/release/app-release.apk "android-dist/$name"
+            (cd android-dist && sha256sum "$name" > "$name.sha256")
+            echo 'artifact=release-android' >> "$GITHUB_OUTPUT"
+          else
+            name='S2N-android-debug.apk'
+            cp android/app/build/outputs/apk/debug/app-debug.apk "android-dist/$name"
+            echo 'artifact=android-debug' >> "$GITHUB_OUTPUT"
+          fi
+          unzip -Z1 "android-dist/$name" | grep -E '^lib/arm64-v8a/.*\.so$'
+          unzip -Z1 "android-dist/$name" | grep -E '^lib/x86_64/.*\.so$'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.package.outputs.artifact }}
+          path: android-dist/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+      - name: Upload Android test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-build-reports
+          path: |
+            android/app/build/reports/
+            android/app/build/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  emulator:
+    name: Android emulator UI smoke tests
+    needs: android-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: android-libbox
+          path: android/app/libs
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Install Android SDK
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Enable hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test screens and authorized synthetic TUN start and stop
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7_pro
+          disable-animations: true
+          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: cd android && bash ./gradlew --no-daemon :app:connectedDebugAndroidTest
+      - name: Upload emulator test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-emulator-reports
+          path: |
+            android/app/build/reports/androidTests/
+            android/app/build/outputs/androidTest-results/
+          if-no-files-found: ignore
+          retention-days: 14

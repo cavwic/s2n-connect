@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.0-beta.1
+
+### Added
+
+- Native Android 8.0+ client with a universal ARM64/x86_64 APK, profile import, and Android VPN authorization. Android connects to an existing VPS; SSH deployment remains a desktop feature.
+- Desktop export of mobile connection profiles. Exported files contain connection credentials and must be transferred privately.
+- Pinned-source libbox builds, Android lint and unit checks, and emulator UI/authorization smoke tests without a real VPS connection.
+- Persistent release-key signing for distribution APKs, with SHA-256 files and provenance attestations where supported.
+
+### Changed
+
+- Release publication waits for all six desktop packages, the Android APK, and Android smoke tests; the complete release has 15 assets including checksums.
+- Public repositories run initial CodeQL analysis for both C# and Java/Kotlin.
+- The empty promotion slots remain in README source comments and are hidden from rendered project pages.
+- Android combined with libbox is distributed under GPL-3.0-or-later; desktop licensing remains MIT.
+
 ## 0.2.2-alpha.2
 
 ### Added

@@ -4,6 +4,7 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using System.Text;
 using S2N.Localization;
 using S2N.Models;
 using S2N.Services;
@@ -743,6 +744,65 @@ public partial class MainWindow : Window
                 L10n.T(
                     "规则已保存，但连接未能重新建立，请手动连接。",
                     "Rules were saved, but the connection could not be re-established. Connect manually."));
+        }
+    }
+
+    private async void ExportMobileProfile_Click(
+        object? sender,
+        RoutedEventArgs e)
+    {
+        try
+        {
+            _profile ??= await _settingsStore.LoadVpsProfileAsync(
+                _settings.VpsProfilePath);
+            if (_profile is null)
+            {
+                await ShowInfoAsync(L10n.T(
+                    "请先部署 VPS，再导出手机配置。",
+                    "Deploy the VPS before exporting a mobile profile."));
+                return;
+            }
+
+            var json = new MobileProfileExportService().Serialize(_profile);
+            var file = await StorageProvider.SaveFilePickerAsync(
+                new FilePickerSaveOptions
+                {
+                    Title = L10n.T(
+                        "导出手机配置（含连接凭据，请妥善保管）",
+                        "Export mobile profile (contains connection credentials; keep it private)"),
+                    SuggestedFileName = "s2n-mobile-profile.json",
+                    DefaultExtension = "json",
+                    ShowOverwritePrompt = true,
+                    FileTypeChoices =
+                    [
+                        new FilePickerFileType("JSON")
+                        {
+                            Patterns = ["*.json"],
+                            MimeTypes = ["application/json"]
+                        }
+                    ]
+                });
+            if (file is null) return;
+
+            await using (var output = await file.OpenWriteAsync())
+            {
+                if (output.CanSeek)
+                {
+                    output.SetLength(0);
+                    output.Position = 0;
+                }
+                await output.WriteAsync(Encoding.UTF8.GetBytes(json));
+                await output.FlushAsync();
+            }
+
+            await ShowSuccessAsync(L10n.T(
+                "手机配置已导出，请在 Android 版 S2N 中导入，并妥善保管该文件。",
+                "Mobile profile exported. Import it into S2N for Android and keep the file private."));
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorAsync(L10n.T(
+                "手机配置导出失败：", "Mobile profile export failed: ") + ex.Message);
         }
     }
 

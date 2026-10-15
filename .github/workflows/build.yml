@@ -18,6 +18,10 @@ env:
   DOTNET_NOLOGO: 'true'
 
 jobs:
+  android:
+    name: Android build and smoke tests
+    uses: ./.github/workflows/android.yml
+
   regression-checks:
     name: Check routing and settings regressions
     runs-on: ubuntu-latest
