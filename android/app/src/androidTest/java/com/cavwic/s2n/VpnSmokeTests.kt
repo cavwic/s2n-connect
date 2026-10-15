@@ -65,15 +65,25 @@ class VpnSmokeTests {
     }
 
     @Test fun authorizedSyntheticTunStartsAndStops() {
-        // Grant only this test emulator's VPN permission through the real Android authorization dialog.
-        val authorization = VpnService.prepare(context)
-        if (authorization != null) {
-            context.startActivity(authorization.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-            val ok = device.wait(Until.findObject(By.res("android", "button1")), 10000)
-            assertNotNull("System VPN authorization dialog must be available", ok)
-            ok.click()
-            waitFor(10000) { VpnService.prepare(context) == null }
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            // ConfirmDialog requires a calling Activity identity supplied by startActivityForResult.
+            // Keep the app visible, matching a real user starting a VPN from the UI.
+            val authorization = VpnService.prepare(context)
+            if (authorization != null) {
+                scenario.onActivity { activity -> activity.startActivityForResult(authorization, 901) }
+                val ok = device.wait(Until.findObject(By.res("android", "button1")), 15000)
+                if (ok == null) screenshot("03-missing-vpn-authorization.png")
+                assertNotNull("System VPN authorization dialog must be available", ok)
+                ok.click()
+                waitFor(10000) { VpnService.prepare(context) == null }
+            }
+            // 901 intentionally avoids MainActivity's user-connection request code:
+            // only the direct fixture below may start, never the imported example profile.
+            assertSyntheticTun()
         }
+    }
+
+    private fun assertSyntheticTun() {
         // Direct-only fixture exercises native libbox + VpnService TUN, without contacting a VPS.
         val fixture = """{"log":{"level":"fatal"},"inbounds":[{"type":"tun","tag":"test-tun","address":["172.19.0.1/30","fdfe:dcba:9876::1/126"],"auto_route":true,"stack":"mixed"}],"outbounds":[{"type":"direct","tag":"direct"}],"route":{"auto_detect_interface":true,"final":"direct"}}"""
         val manager = context.getSystemService(ConnectivityManager::class.java)
