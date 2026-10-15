@@ -1,73 +1,41 @@
-[**简体中文**](README.md) · [English](README.en.md)<br>
+[**简体中文**](README.md) · [English](README.en.md)
 
-![S2N Connect：VPS上 增加 VPN 功能](docs/brand/s2n-banner.png)
+![S2N Connect：VPS 上增加 VPN 功能](docs/brand/s2n-banner.png)
 
-# S2N Connect
+# S2N Connect · Beta
 
-**VPS 上增加 VPN 功能。**
+[下载使用](https://github.com/cavwic/s2n-connect/releases) · [问题反馈](https://github.com/cavwic/s2n-connect/issues)
 
-S2N Connect 提供桌面端和 Android 客户端。桌面端可在自有 VPS 上部署 Xray 的 **VLESS + REALITY** 服务，并在本机使用 **sing-box TUN** 分流；Android 端导入桌面端导出的配置，连接已经部署的 VPS。你需要自备 VPS。
+## 这是什么
 
-[下载 Beta 版本](https://github.com/cavwic/s2n-connect/releases) · [更新记录](CHANGELOG.md) · [报告问题](https://github.com/cavwic/s2n-connect/issues)
+一个给自有 VPS 增加 VPN 功能的工具，提供 Windows、macOS、Linux 和 Android 客户端。需要自备 VPS。
 
-## 平台
+## 能做什么
 
-| 客户端 | 架构 | 发布包 |
-| --- | --- | --- |
-| Windows 10 / 11 | x64、ARM64 | `.zip` |
-| macOS 13+ | Intel、Apple silicon | `.tar.gz` |
-| Linux 桌面（包括 Ubuntu） | x64、ARM64 | `.tar.gz` |
-| Android 8.0+ | ARM64、x86_64 | universal `.apk` |
+- 在桌面端一键部署 VPS 服务并连接。
+- 按规则分流，或使用全局模式。
+- 导出手机配置，在 Android 上导入连接。
 
-发布包含六个桌面目标和一个 Android 通用 APK。编译、打包和模拟器界面测试通过不代表各系统的 VPS 联网与 TUN 已完成实机验证，具体限制见下文。
+## 怎么用
 
-**VPS：** 当前 Beta 的部署目标为带 systemd 的 Ubuntu / Debian，需通过 root 用户进行 SSH 连接。
+**准备：** Ubuntu / Debian VPS、root SSH 私钥，并在服务器和云防火墙中放行 TCP 443。已有服务请先备份配置。
 
-## 桌面端主要功能
+**电脑：**
 
-- **部署与安装：** 可一键部署本机 sing-box 和 VPS 服务，也可分别操作。自动识别系统、架构；安装目录由你选择，下载包通过 SHA-256 校验后解压，验证可执行文件后保存路径，并清理临时下载文件。
-- **SSH 连接：** 自定义 SSH 用户和端口，从任意本地目录选择私钥并按内容验证格式；首次连接需核对服务器指纹，后续指纹变化会拒绝连接。私钥路径仅在连接成功后保存，私钥口令不落盘。
-- **发现已有安装：** 从保存设置、运行进程、PATH 和常用位置查找 sing-box，并更新操作按钮状态。
-- **按需分流：** 程序名与域名后缀规则独立生效；清空规则不会变成无条件代理。规则模式默认直连，全局模式将公网流量交给 VPS；局域网、私有地址和 VPS 地址保持直连。
-- **DNS：** 公网域名通过 VPS 使用远端 DoH，本地名称和反向查询使用本地 DNS。
-- **状态与控制：** 先判断 sing-box 进程，再经受管理的代理检测 Google 连通性；连接与停止按钮按实际进程状态更新。出口 IP 查询失败不会否定已确认的连接。
-- **桌面偏好：** 系统、浅色和深色主题可即时切换并保存；中文系统使用中文，其余系统使用英文；支持系统托盘菜单的环境可从托盘显示、连接、停止和退出。
-- **启动与连接：** 可在登录后延迟约 60 秒启动；自动连接需先成功连接一次，并检查网络、DNS、VPS 端口与本地安装是否就绪。
+1. 下载对应系统和架构的包，完整解压后运行 `S2N.exe`（Windows）或 `S2N`（macOS / Linux）。
+2. 填写 VPS 地址、SSH 端口和 root 用户，选择私钥；点击“测试 VPS”并核对服务器指纹。
+3. 点击“一键部署”，选择本地安装目录，等待完成。
+4. 按需设置“规则管理”或全局模式，点击“连接”并允许管理员授权；点击“停止”断开。
 
-安装校验优先使用官方发布的 SHA-256 校验和文件；发布未提供该文件时，使用 GitHub 发布资产的 SHA-256 digest。校验值缺失、无效或不匹配都会停止安装，不会跳过验证。
+**安卓（Android 8.0+，ARM64 / x86_64）：**
 
-## 使用前准备
+1. 在桌面端点击“导出手机配置”，将文件传到手机。
+2. 安装发布页的 `android-universal.apk`，点击“选择配置文件”导入。
+3. 点击“连接 VPN”并允许 VPN 授权；可用“验证代理访问”检查联网，点击“停止 VPN”断开。
 
-- 自备 Ubuntu / Debian VPS、root SSH 私钥，以及可用的 SSH 端口；服务端使用 **TCP 443**，请确保该端口可用，并在云防火墙和系统防火墙中放行。
-- 建议先在干净 VPS 上使用。部署会安装 Xray、写入服务配置并启用服务；已有 Xray 配置或其他服务时，请先备份并检查冲突。
-- 本机与 VPS 需要能访问相关下载源。本机启动 TUN 时需要管理员授权；Linux 使用 `pkexec`，macOS 使用系统管理员提示。
-- 下载与你的系统和架构匹配的发布包，完整解压后运行 `S2N.exe`（Windows）或 `S2N`（macOS / Linux）。发布包自带 .NET 运行时。
+配置文件含连接凭据，请勿公开分享。
 
-## 快速使用
-
-1. 填写 VPS 地址、SSH 用户和端口，选择 SSH 私钥；加密私钥需填写本次使用的口令。
-2. 点击“测试 VPS”，通过供应商控制台或其他可信渠道核对首次显示的 SSH 服务器指纹。
-3. 点击“一键部署”，选择本地 sing-box 安装目录并等待完成。也可使用“选择并安装”和“仅部署 VPS”分别操作。
-4. 在“规则管理”中设置程序名和域名后缀，按需启用全局模式；点击“连接”并完成管理员授权，等待连通性检测。
-5. 点击“停止”断开连接，使用“退出”结束程序。支持托盘的环境中，关闭窗口或最小化可能只会隐藏主窗口。
-
-首次成功连接后，可再按需开启自动连接和登录启动。自动连接不会代填加密 SSH 私钥口令；日常连接使用已部署的 VPS 配置。
-
-## Android 使用
-
-1. 在桌面端部署或配置好 VPS，使用移动端配置导出功能保存连接配置。导出文件含连接凭据，请通过可信方式传到自己的手机。
-2. 安装发布中的 `android-universal.apk`，导入该配置。Android 端连接现有 VPS，不执行 SSH 部署。
-3. 点击连接并确认 Android 的 VPN 授权；停止时使用应用中的停止按钮。Android 同时只允许一个 VPN 应用接管流量。
-
-APK 同时包含 ARM64 和 x86_64 的原生核心，使用项目持久签名密钥签名。模拟器测试覆盖界面、VPN 授权及仅直连测试配置的真实 TUN 启停，不连接 VPS，也不验证代理联网。
-
-详细限制、源码构建及签名说明见[发布指南](GITHUB_PUBLISHING.md)和 [Android 文档](android/README.md)。
-
-## 许可与项目文档
-
-桌面端使用 [MIT 许可证](LICENSE)。Android 应用与 libbox 的组合按 **GPL-3.0-or-later** 分发；该许可不改变桌面端的 MIT 许可。sing-box、Xray 及其他依赖遵循各自上游许可证，参见[第三方说明](THIRD_PARTY_NOTICES.md)。
-
-[架构](ARCHITECTURE.md) · [参与贡献](CONTRIBUTING.md) · [GitHub 发布指南](GITHUB_PUBLISHING.md) · [更新记录](CHANGELOG.md)
+[许可与第三方说明](THIRD_PARTY_NOTICES.md) · [签名说明](SIGNING.md)
 
 <!-- Reserved promotion slots; hidden until content is ready.
 <table width="100%">

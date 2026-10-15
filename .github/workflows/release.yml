@@ -235,15 +235,7 @@ jobs:
             const entry = changelog.split(/^## /m).slice(1)
               .find(section => section.split('\n')[0].trim() === version);
             if (!entry) throw new Error(`CHANGELOG.md has no section for ${version}.`);
-            const workflowUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const codeqlUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/workflows/codeql.yml`;
-            const body = `## ${entry.trim()}\n\n## Beta validation and package notes\n\n` +
-              '- The Android APK is signed with the project release key. Desktop archives are unsigned; macOS packages are not notarized.\n' +
-              '- Android connects to an existing VPS using a desktop-exported profile. VPS deployment remains a desktop feature.\n' +
-              '- Android emulator tests cover UI, VPN authorization, and real TUN start/stop with a direct-only fixture, without connecting to a VPS. Full physical-device VPS/TUN validation remains incomplete across platforms.\n' +
-              '- The Android app combined with libbox is distributed under GPL-3.0-or-later; the desktop app remains MIT. Pinned core source and build instructions are in THIRD_PARTY_NOTICES.md and android/scripts/build-libbox.sh.\n' +
-              '- CodeQL and provenance execution or skip status is recorded in workflow summaries; package checksums are verified separately.\n\n' +
-              `[Release workflow summary](${workflowUrl}) · [CodeQL workflow summaries](${codeqlUrl})`;
+            const body = fs.readFileSync('docs/release-description.md', 'utf8').trim();
             let release;
             try {
               release = (await github.rest.repos.getReleaseByTag({ ...context.repo, tag })).data;
