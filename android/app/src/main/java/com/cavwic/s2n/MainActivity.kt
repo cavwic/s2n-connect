@@ -60,6 +60,8 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         title = "S2N Connect"
         if (!BuildConfig.DEBUG) window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        buildUi()
+        // setContentView must create the decor before PhoneWindow supplies its controller.
         if (Build.VERSION.SDK_INT >= 30) {
             val appearance = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
                 android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
@@ -68,7 +70,6 @@ class MainActivity : Activity() {
             @Suppress("DEPRECATION")
             window.decorView.systemUiVisibility = if (dark) 0 else View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
         }
-        buildUi()
     }
 
     private fun t(zh: String, en: String) = if (english) en else zh
@@ -91,8 +92,10 @@ class MainActivity : Activity() {
         val header = LinearLayout(this).apply { gravity = Gravity.CENTER_VERTICAL }
         header.addView(ImageView(this).apply { setImageResource(R.mipmap.ic_launcher); contentDescription = "S2N" },
             LinearLayout.LayoutParams(dp(48), dp(48)))
-        header.addView(TextView(this).apply { text = "S2N Connect"; textSize = 25f; setPadding(dp(12), 0, 0, 0) },
-            LinearLayout.LayoutParams(0, dp(60), 1f))
+        header.addView(TextView(this).apply {
+            text = "S2N Connect"; textSize = 25f; gravity = Gravity.CENTER_VERTICAL
+            minimumHeight = dp(60); setPadding(dp(12), 0, 0, 0)
+        }, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(Button(this).apply {
             id = R.id.language_button; text = "文/A"; textSize = 16f
             contentDescription = t("切换为英文", "Switch to Chinese")
@@ -130,8 +133,11 @@ class MainActivity : Activity() {
         key = field(t("REALITY 公钥", "REALITY public key"))
         shortId = field("Short ID")
         sni = field("SNI")
-        global = Switch(this).apply { text = t("全局代理（关闭后按域名规则）", "Global proxy (off: domain rules)"); textSize = 17f }
-        layout.addView(global, LinearLayout.LayoutParams(-1, dp(64)))
+        global = Switch(this).apply {
+            text = t("全局代理（关闭后按域名规则）", "Global proxy (off: domain rules)")
+            textSize = 17f; minimumHeight = dp(64)
+        }
+        layout.addView(global, LinearLayout.LayoutParams(-1, -2))
         domainRules = field(t("代理域名，每行一个", "Proxy domains, one per line"), ConfigBuilder.DEFAULT_DOMAINS, true)
         label(t("规则模式：所列域名走 VPS，其余直连；全局模式仍保持局域网直连。", "Rule mode: listed domains use the VPS; other traffic connects directly. LAN stays direct in global mode."))
         button(t("保存配置", "Save profile")) {
@@ -171,8 +177,9 @@ class MainActivity : Activity() {
         this@MainActivity.layout.addView(this, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
     }
     private fun button(value: String, viewId: Int = View.NO_ID, action: () -> Unit): Button = Button(this).apply {
-        id = viewId; text = value; textSize = 17f; isAllCaps = false; setOnClickListener { action() }
-        this@MainActivity.layout.addView(this, LinearLayout.LayoutParams(-1, dp(56)).apply { topMargin = dp(4) })
+        id = viewId; text = value; textSize = 17f; isAllCaps = false; minimumHeight = dp(56)
+        setOnClickListener { action() }
+        this@MainActivity.layout.addView(this, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(4) })
     }
     private fun fill(profile: Profile) {
         server.setText(profile.serverIp); port.setText(profile.serverPort.toString()); uuid.setText(profile.uuid)

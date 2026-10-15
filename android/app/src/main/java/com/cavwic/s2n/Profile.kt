@@ -73,7 +73,9 @@ data class Profile(
 }
 
 object ConfigBuilder {
-    const val DEFAULT_DOMAINS = "google.com\ngoogleapis.com\nyoutube.com\nopenai.com\nchatgpt.com"
+    const val DEFAULT_DOMAINS = "google.com\ngoogleapis.com\ngstatic.com\ngoogleusercontent.com\n" +
+        "youtube.com\ngooglevideo.com\nytimg.com\nggpht.com\n" +
+        "openai.com\nchatgpt.com\noaistatic.com\noaiusercontent.com"
     fun domains(text: String): List<String> = text.split(Regex("[\\s,，;；]+"))
         .map { it.trim().trim('.').lowercase() }.filter { it.isNotEmpty() }.distinct().also { values ->
             require(values.size <= 500 && values.all { Profile.validDomain(it) }) { "domains" }

@@ -58,7 +58,9 @@ class VpnSmokeTests {
     }
 
     private fun screenshot(name: String) {
-        val directory = File(context.getExternalFilesDir(null), "screenshots").apply { mkdirs() }
+        val output = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
+            ?.takeIf { it.isNotBlank() }?.let { File(it) } ?: context.getExternalFilesDir(null)
+        val directory = File(output, "screenshots").apply { mkdirs() }
         assertTrue("UI screenshot must be written", device.takeScreenshot(File(directory, name)))
     }
 
@@ -83,7 +85,7 @@ class VpnSmokeTests {
             context.startForegroundService(Intent(context, S2NVpnService::class.java)
                 .setAction(S2NVpnService.ACTION_START).putExtra(S2NVpnService.CONFIG_JSON, fixture))
             waitFor(20000) { S2NVpnService.currentState == "RUNNING" || S2NVpnService.currentState == "ERROR" }
-            assertEquals("RUNNING", S2NVpnService.currentState)
+            assertEquals(S2NVpnService.lastMessage, "RUNNING", S2NVpnService.currentState)
             waitFor(10000) { (vpnNetworks() - existingVpnNetworks).isNotEmpty() }
         } finally {
             context.startService(Intent(context, S2NVpnService::class.java).setAction(S2NVpnService.ACTION_STOP))
