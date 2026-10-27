@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.ComponentModel;
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using S2N.Localization;
 
@@ -9,6 +11,7 @@ public sealed class PrivilegeLauncher
 {
     private readonly string _pidPath;
     private readonly Dictionary<int, Process> _launchHandles = new();
+    private readonly Dictionary<int, OwnedCoreProcess> _launchIntents = new();
     private readonly Action<OwnedCoreProcess>? _afterLaunch;
 
     public PrivilegeLauncher(string? stateDirectory = null) : this(stateDirectory, null) { }
@@ -192,15 +195,15 @@ public sealed class PrivilegeLauncher
         {
             var psi = new ProcessStartInfo
             {
-                FileName = "pkexec",
+                FileName = "/usr/bin/pkexec",
                 UseShellExecute = false,
                 RedirectStandardError = true,
                 RedirectStandardOutput = true
             };
-            psi.ArgumentList.Add(executablePath);
+            psi.ArgumentList.Add(Path.GetFullPath(executablePath));
             psi.ArgumentList.Add("run");
             psi.ArgumentList.Add("-c");
-            psi.ArgumentList.Add(configPath);
+            psi.ArgumentList.Add(Path.GetFullPath(configPath));
 
             process = Process.Start(psi)
                 ?? throw new InvalidOperationException(
@@ -217,9 +220,11 @@ public sealed class PrivilegeLauncher
         var record = new OwnedCoreProcess(process.Id,
             process.StartTime.ToUniversalTime().Ticks,
             Path.GetFullPath(executablePath), Path.GetFullPath(configPath),
-            LauncherExecutablePath: ProcessLocator.TryGetExecutablePath(process) ?? "",
+            LauncherExecutablePath: PlatformInfo.IsLinux ? "/usr/bin/pkexec"
+                : ProcessLocator.TryGetExecutablePath(process) ?? "",
             InterfaceName: interfaceName);
         _launchHandles[process.Id] = process;
+        _launchIntents[process.Id] = record;
         try
         {
             // Persist ownership even if the caller cancelled just after UAC;
@@ -232,6 +237,7 @@ public sealed class PrivilegeLauncher
         {
             await StopVerifiedProcessAsync(record, CancellationToken.None);
             if (_launchHandles.Remove(record.Pid, out var handle)) handle.Dispose();
+            _launchIntents.Remove(record.Pid);
             throw;
         }
     }
@@ -269,10 +275,11 @@ public sealed class PrivilegeLauncher
             await WindowsTunAdapterCleanup.RemoveAsync(record, Path.GetDirectoryName(_pidPath)!, CancellationToken.None);
         }
         if (_launchHandles.Remove(record.Pid, out var handle)) handle.Dispose();
+        _launchIntents.Remove(record.Pid);
         try { File.Delete(_pidPath); } catch { }
     }
 
-    private static async Task StopVerifiedProcessAsync(
+    private async Task StopVerifiedProcessAsync(
         OwnedCoreProcess record, CancellationToken cancellationToken)
     {
         using var process = FindOwnedProcess(record);
@@ -294,10 +301,23 @@ public sealed class PrivilegeLauncher
         }
         else
         {
-            var result = await ProcessRunner.RunAsync("pkexec",
-                ["kill", "-TERM", record.Pid.ToString()], cancellationToken: cancellationToken);
+            // The authentication dialog may remain open for a while. Recheck
+            // PID birth, executable and exact argv inside the privileged helper.
+            string startTicks;
+            try { startTicks = ReadLinuxStartTicks(record.Pid); }
+            catch (IOException) when (process.HasExited) { return; }
+            if (process.HasExited) return;
+            var result = await ProcessRunner.RunAsync("/usr/bin/pkexec",
+                ["/bin/sh", "-c", LinuxStopScript, "s2n-owned-stop",
+                    record.Pid.ToString(CultureInfo.InvariantCulture), startTicks,
+                    record.ExecutablePath, EncodeArguments(record.ExecutablePath, "run", "-c", record.ConfigPath),
+                    !record.Ready && IsTrustedLinuxLaunch(record, process, true)
+                        ? EncodeArguments("/usr/bin/pkexec", record.ExecutablePath, "run", "-c", record.ConfigPath) : ""],
+                cancellationToken: cancellationToken);
             if (result.ExitCode != 0 && !process.HasExited)
-                throw new InvalidOperationException(result.StdErr);
+                throw new InvalidOperationException(L10n.T(
+                    "无法核验或停止本次 sing-box，连接记录已保留，请重试。",
+                    "This sing-box process could not be verified or stopped. Its ownership record was kept; try again."));
         }
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(15));
@@ -407,21 +427,95 @@ public sealed class PrivilegeLauncher
         catch { return null; }
     }
 
-    private static Process? FindOwnedProcess(OwnedCoreProcess record)
+    private Process? FindOwnedProcess(OwnedCoreProcess record)
     {
         Process? process = null;
         try
         {
             process = Process.GetProcessById(record.Pid);
             var actualPath = ProcessLocator.TryGetExecutablePath(process);
-            if (!process.HasExited && actualPath is not null
-                && record.MatchesLiveProcess(process.Id, process.StartTime.ToUniversalTime().Ticks,
-                    actualPath, PlatformInfo.IsWindows)) return process;
+            if (!process.HasExited)
+            {
+                if (actualPath is not null && record.MatchesLiveProcess(process.Id,
+                        process.StartTime.ToUniversalTime().Ticks, actualPath, PlatformInfo.IsWindows)) return process;
+                if (actualPath is null && PlatformInfo.IsLinux && LinuxExecutableAccessDenied(process.Id)
+                    && IsTrustedLinuxLaunch(record, process, true)) return process;
+            }
         }
         catch { }
         process?.Dispose();
         return null;
     }
+
+    private bool IsTrustedLinuxLaunch(OwnedCoreProcess record, Process observed, bool accessDenied)
+    {
+        if (!_launchIntents.TryGetValue(record.Pid, out var original)
+            || !_launchHandles.TryGetValue(record.Pid, out var originalProcess)) return false;
+        try
+        {
+            return !originalProcess.HasExited
+                && originalProcess.Id == observed.Id
+                && originalProcess.StartTime.ToUniversalTime().Ticks == observed.StartTime.ToUniversalTime().Ticks
+                && MatchesTrustedLinuxIntent(original, record, observed.Id,
+                    observed.StartTime.ToUniversalTime().Ticks, PlatformInfo.IsLinux, accessDenied);
+        }
+        catch { return false; }
+    }
+
+    internal static bool MatchesTrustedLinuxIntent(OwnedCoreProcess? original, OwnedCoreProcess record,
+        int observedPid, long observedStartTicks, bool isLinux, bool accessDenied) =>
+        isLinux && accessDenied && original is not null
+        && original.Matches(record.Pid, record.StartTimeUtcTicks, record.ExecutablePath, record.ConfigPath, false)
+        && original.Pid == observedPid && original.StartTimeUtcTicks == observedStartTicks;
+
+    private static bool LinuxExecutableAccessDenied(int pid)
+    {
+        try { File.ResolveLinkTarget($"/proc/{pid}/exe", true); return false; }
+        catch (UnauthorizedAccessException) { return true; }
+        catch { return false; }
+    }
+
+    internal static string ReadLinuxStartTicks(int pid)
+    {
+        var stat = File.ReadAllText($"/proc/{pid}/stat");
+        var end = stat.LastIndexOf(") ", StringComparison.Ordinal);
+        var fields = end < 0 ? [] : stat[(end + 2)..].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (fields.Length <= 19 || !ulong.TryParse(fields[19], NumberStyles.None,
+                CultureInfo.InvariantCulture, out _)) throw new InvalidOperationException(L10n.T(
+            "无法核验本次 sing-box 的启动时间，未执行停止。",
+            "The sing-box start time could not be verified; it was not stopped."));
+        return fields[19];
+    }
+
+    private static string EncodeArguments(params string[] arguments) =>
+        Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Join('\0', arguments) + "\0"));
+
+    internal static string LinuxStopScript => """
+set -eu
+owned_pid=$1
+expected_start=$2
+expected_exe=$3
+expected_core_argv=$4
+expected_broker_argv=$5
+process_dir=/proc/$owned_pid
+if [ ! -d "$process_dir" ]; then exit 0; fi
+stat=$(cat "$process_dir/stat") || exit 61
+rest=${stat##*) }
+set -- $rest
+if [ "$#" -lt 20 ]; then exit 61; fi
+shift 19
+if [ "$1" != "$expected_start" ]; then exit 0; fi
+actual_exe=$(readlink "$process_dir/exe") || exit 61
+actual_argv=$(base64 < "$process_dir/cmdline" | tr -d '\n') || exit 61
+if [ "$actual_exe" = "$expected_exe" ]; then
+  [ "$actual_argv" = "$expected_core_argv" ] || exit 62
+elif [ -n "$expected_broker_argv" ] && [ "$actual_exe" = /usr/bin/pkexec ]; then
+  [ "$actual_argv" = "$expected_broker_argv" ] || exit 62
+else
+  exit 62
+fi
+kill -TERM "$owned_pid"
+""".Replace("\r\n", "\n");
 
     private static bool RecordedProcessExited(OwnedCoreProcess record)
     {

@@ -18,6 +18,12 @@ if (args is ["--native-windows", var core, var resultDirectory])
     return;
 }
 
+if (args is ["--write-linux-stop-script", var scriptPath])
+{
+    await File.WriteAllTextAsync(scriptPath, PrivilegeLauncher.LinuxStopScript);
+    return;
+}
+
 var directory = Path.Combine(Path.GetTempPath(), "s2n-tun-checks-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(directory);
 try { await RunChecksAsync(directory); }
@@ -191,6 +197,64 @@ static async Task RunChecksAsync(string directory)
     Check(!record.Matches(123, 456, Path.Combine(directory, "foreign.exe"), config, true), "foreign executable is rejected");
     Check(!record.Matches(123, 456, executable, Path.Combine(directory, "private-config.json"), true), "same binary with another config is rejected");
     Check(!record.Matches(124, 456, executable, config, true), "different core PID is rejected");
+    Check(PrivilegeLauncher.MatchesTrustedLinuxIntent(record, record, 123, 456, true, true),
+        "a same-run immutable Linux launch intent can identify its permission-protected child");
+    Check(!PrivilegeLauncher.MatchesTrustedLinuxIntent(null, record, 123, 456, true, true),
+        "a persisted record without a same-run child is never adopted when its path is unreadable");
+    Check(!PrivilegeLauncher.MatchesTrustedLinuxIntent(record, record, 123, 457, true, true)
+        && !PrivilegeLauncher.MatchesTrustedLinuxIntent(record, record, 124, 456, true, true),
+        "PID reuse and a different observed process cannot use the Linux child exception");
+    Check(!PrivilegeLauncher.MatchesTrustedLinuxIntent(record, record with { ConfigPath = config + ".other" }, 123, 456, true, true)
+        && !PrivilegeLauncher.MatchesTrustedLinuxIntent(record, record with { ExecutablePath = executable + ".other" }, 123, 456, true, true),
+        "an altered configuration or executable cannot reuse a trusted child intent");
+    Check(!PrivilegeLauncher.MatchesTrustedLinuxIntent(record, record, 123, 456, false, true)
+        && !PrivilegeLauncher.MatchesTrustedLinuxIntent(record, record, 123, 456, true, false),
+        "the child exception requires Linux and a specific access-denied result");
+    Check(PrivilegeLauncher.LinuxStopScript.Contains("$expected_start")
+        && PrivilegeLauncher.LinuxStopScript.Contains("$expected_exe")
+        && PrivilegeLauncher.LinuxStopScript.Contains("$expected_core_argv")
+        && PrivilegeLauncher.LinuxStopScript.Contains("kill -TERM \"$owned_pid\""),
+        "the elevated Linux stop helper revalidates start time, executable and exact config arguments");
+    Check(!PrivilegeLauncher.LinuxStopScript.Contains('\r'), "the Linux stop helper always uses LF line endings");
+
+    if (OperatingSystem.IsLinux())
+    {
+        using var ownedSleep = Process.Start("/usr/bin/sleep", "20")!;
+        using var unrelatedSleep = Process.Start("/usr/bin/sleep", "20")!;
+        try
+        {
+            var pid = ownedSleep.Id;
+            var birth = PrivilegeLauncher.ReadLinuxStartTicks(pid);
+            var actualExe = ProcessLocator.TryGetExecutablePath(ownedSleep)!;
+            var exactArguments = Convert.ToBase64String(await File.ReadAllBytesAsync($"/proc/{pid}/cmdline"));
+            async Task<ProcessResult> StopFixture(string start, string path, string argv) =>
+                await ProcessRunner.RunAsync("/bin/sh", ["-c", PrivilegeLauncher.LinuxStopScript,
+                    "s2n-owned-stop-fixture", pid.ToString(), start, path, argv, ""]);
+            var wrongBirth = await StopFixture((ulong.Parse(birth) + 1).ToString(), actualExe, exactArguments);
+            Check(wrongBirth.ExitCode == 0 && !ownedSleep.HasExited,
+                "elevated Linux helper never signals a recycled PID with a different birth time");
+            var wrongExecutable = await StopFixture(birth, "/usr/bin/false", exactArguments);
+            Check(wrongExecutable.ExitCode == 62 && !ownedSleep.HasExited,
+                "elevated Linux helper rejects a different executable after authentication");
+            var wrongArguments = await StopFixture(birth, actualExe,
+                Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("fixture\0run\0-c\0other-config\0")));
+            Check(wrongArguments.ExitCode == 62 && !ownedSleep.HasExited,
+                "elevated Linux helper rejects an altered configuration argument");
+            var stopped = await StopFixture(birth, actualExe, exactArguments);
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            await ownedSleep.WaitForExitAsync(deadline.Token);
+            Check(stopped.ExitCode == 0 && ownedSleep.HasExited && !unrelatedSleep.HasExited,
+                "verified Linux helper signals only its exact owned fixture and preserves another same-binary process");
+        }
+        finally
+        {
+            foreach (var fixture in new[] { ownedSleep, unrelatedSleep })
+            {
+                if (!fixture.HasExited) fixture.Kill();
+                await fixture.WaitForExitAsync();
+            }
+        }
+    }
 
     using var self = Process.GetCurrentProcess();
     var selfPath = ProcessLocator.TryGetExecutablePath(self)!;
