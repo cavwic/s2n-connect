@@ -63,6 +63,47 @@ public static class WindowsTunAdapterCleanup
             ?? throw new InvalidOperationException("The synthetic legacy adapter identity was not captured.");
     }
 
+    internal static Task VerifyCandidateAbsentBeforeLaunchAsync(string name, CancellationToken cancellationToken) =>
+        AssertCandidateAbsentAsync(name, cancellationToken);
+
+    internal static async Task<OwnedCoreProcess> CapturePendingAsync(OwnedCoreProcess record,
+        CancellationToken cancellationToken = default)
+    {
+        if (record.Ready || !record.AdapterAbsentBeforeLaunch || !IsGeneratedName(record.InterfaceName))
+            throw IdentityError();
+        // A normal adapter identity appearing during this last check still has
+        // to match its alias and GUID; a conflicting row is never bypassed.
+        var identity = await QueryIdentityAsync(record.InterfaceName, ExpectedGuid(record.InterfaceName), cancellationToken);
+        if (identity is null)
+        {
+            var script = BuildPendingIdentityScript(record.InterfaceName);
+            var result = await ProcessRunner.RunAsync(PowerShellPath(),
+                ["-NoProfile", "-NonInteractive", "-EncodedCommand", Convert.ToBase64String(Encoding.Unicode.GetBytes(script))],
+                cancellationToken: cancellationToken);
+            if (result.ExitCode != 0) throw IdentityError();
+            if (string.IsNullOrWhiteSpace(result.StdOut)) return record;
+            identity = JsonSerializer.Deserialize<WindowsAdapterIdentity>(result.StdOut) ?? throw IdentityError();
+        }
+        if (!IsExpectedIdentity(record.InterfaceName, identity.InterfaceGuid)
+            || !MatchesPnpGuid(identity.InterfaceGuid, identity.PnpDeviceId)) throw IdentityError();
+        return record with { InterfaceGuid = identity.InterfaceGuid, PnpDeviceId = identity.PnpDeviceId,
+            PendingAdapterIdentityRecovered = true };
+    }
+
+    internal static string BuildPendingIdentityScript(string name) =>
+        """
+$ErrorActionPreference = 'Stop'
+$expectedInstance = __INSTANCE__
+$devices = @(Get-PnpDevice -Class Net -ErrorAction Stop | Where-Object {
+  $_.InstanceId -ieq $expectedInstance
+})
+if ($devices.Count -eq 0) { exit 0 }
+if ($devices.Count -ne 1 -or $devices[0].Class -ne 'Net' -or
+    $devices[0].InstanceId -notmatch '^SWD\\WINTUN\\') { throw 'Pending adapter identity did not match.' }
+@{ InterfaceGuid = ([guid]$devices[0].InstanceId.Substring('SWD\WINTUN\'.Length)).ToString('D');
+   PnpDeviceId = $devices[0].InstanceId } | ConvertTo-Json -Compress
+""".Replace("__INSTANCE__", Quote("SWD\\WINTUN\\{" + ExpectedGuid(name).ToUpperInvariant() + "}"));
+
     private static async Task<WindowsAdapterIdentity?> QueryIdentityAsync(string name, string guid,
         CancellationToken cancellationToken)
     {
@@ -114,7 +155,7 @@ if ($ownedAdapters.Count -ne 1 -or $ownedAdapters[0].NetConnectionID -cne $expec
         if (!IsExpectedIdentity(record.InterfaceName, record.InterfaceGuid)
             || !MatchesPnpGuid(record.InterfaceGuid, record.PnpDeviceId)) throw IdentityError();
         return RemoveExactAsync(record.InterfaceName, record.InterfaceGuid, record.PnpDeviceId,
-            resultDirectory, cancellationToken);
+            resultDirectory, cancellationToken, record.AdapterAbsentBeforeLaunch, record.PendingAdapterIdentityRecovered);
     }
 
     internal static Task RemoveLegacyFixtureAsync(string name, WindowsAdapterIdentity identity, string resultDirectory)
@@ -128,12 +169,12 @@ if ($ownedAdapters.Count -ne 1 -or $ownedAdapters[0].NetConnectionID -cne $expec
     }
 
     private static async Task RemoveExactAsync(string name, string guid, string pnpDeviceId, string resultDirectory,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool prelaunchAbsent = false, bool recoveredPending = false)
     {
         cancellationToken.ThrowIfCancellationRequested();
         Directory.CreateDirectory(resultDirectory);
         var resultPath = Path.Combine(resultDirectory, "adapter-cleanup-" + Guid.NewGuid().ToString("N") + ".json");
-        var script = BuildRemovalScript(name, guid, pnpDeviceId, resultPath);
+        var script = BuildRemovalScript(name, guid, pnpDeviceId, resultPath, prelaunchAbsent, recoveredPending);
         var start = new ProcessStartInfo
         {
             FileName = PowerShellPath(),
@@ -156,10 +197,12 @@ if ($ownedAdapters.Count -ne 1 -or $ownedAdapters[0].NetConnectionID -cne $expec
                 "This connection's TUN adapter could not be removed. Its ownership record was kept; stop it again to retry."));
     }
 
-    internal static string BuildRemovalScript(string name, string guid, string pnpDeviceId, string resultPath) =>
+    internal static string BuildRemovalScript(string name, string guid, string pnpDeviceId, string resultPath,
+        bool prelaunchAbsent = false, bool recoveredPending = false) =>
         """
 $ErrorActionPreference = 'Stop'
-$result = [ordered]@{ Status = 'Pending'; InterfaceName = __NAME__; InterfaceGuid = __GUID__; PnpDeviceId = __PNPID__ }
+$result = [ordered]@{ Status = 'Pending'; InterfaceName = __NAME__; InterfaceGuid = __GUID__; PnpDeviceId = __PNPID__;
+  PrelaunchAbsent = __ABSENT__; PendingIdentityRecovered = __PENDING__ }
 $resultPath = __RESULT__
 try {
   $expectedGuid = [guid]$result.InterfaceGuid
@@ -207,7 +250,8 @@ try {
   exit 1
 }
 """.Replace("__NAME__", Quote(name)).Replace("__GUID__", Quote(guid))
-        .Replace("__PNPID__", Quote(pnpDeviceId)).Replace("__RESULT__", Quote(resultPath));
+        .Replace("__PNPID__", Quote(pnpDeviceId)).Replace("__RESULT__", Quote(resultPath))
+        .Replace("__ABSENT__", prelaunchAbsent ? "$true" : "$false").Replace("__PENDING__", recoveredPending ? "$true" : "$false");
 
     internal static bool IsWintunDeviceId(string value) => value.StartsWith("SWD\\WINTUN\\", StringComparison.OrdinalIgnoreCase)
         && value.Length > "SWD\\WINTUN\\".Length;

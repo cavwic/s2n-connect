@@ -85,9 +85,10 @@ internal static class NativeWindowsChecks
                 Require(WindowsTunAdapterCleanup.IsExpectedIdentity(name, identity.InterfaceGuid)
                     && WindowsTunAdapterCleanup.IsWintunDeviceId(identity.PnpDeviceId),
                     "The owned adapter's actual GUID/PnP identity was not recorded.");
+                Require(identity.AdapterAbsentBeforeLaunch, "Prelaunch adapter/PnP absence was not recorded.");
                 await SaveProgressAsync(new { Stage = "FirstLaunchReady", Run = index + 1,
                     Attempts = 1, Interface = name, identity.InterfaceGuid, identity.PnpDeviceId,
-                    identity.Pid, StartupMs = watch.ElapsedMilliseconds });
+                    identity.Pid, identity.AdapterAbsentBeforeLaunch, StartupMs = watch.ElapsedMilliseconds });
                 await launcher.StopAsync(executablePath, configPath: mainConfig);
                 await WaitForRemovalAsync(name, port, identity.Pid);
                 await SaveProgressAsync(new { Stage = "OwnedFixtureRemoved", Run = index + 1,
@@ -121,6 +122,8 @@ internal static class NativeWindowsChecks
             }
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
             Require(cancelledIdentity is not null, "The cancellation fixture never created its core process.");
+            Require(cancelledIdentity!.AdapterAbsentBeforeLaunch,
+                "Cancellation recovery cannot rely on a launch without preverified adapter absence.");
             await WaitForRemovalAsync(cancelledName, cancelledPort, cancelledIdentity!.Pid);
             await SaveProgressAsync(new { Stage = "CancellationCleanupComplete",
                 Interface = cancelledName, cancelledIdentity.Pid });

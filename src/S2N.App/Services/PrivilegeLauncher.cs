@@ -139,6 +139,7 @@ public sealed class PrivilegeLauncher
         string executablePath, string configPath, CancellationToken cancellationToken)
     {
         var interfaceName = "";
+        var adapterAbsentBeforeLaunch = false;
         if (PlatformInfo.IsWindows)
         {
             var candidate = TunLifecycle.ReadOptions(configPath).InterfaceName;
@@ -147,7 +148,9 @@ public sealed class PrivilegeLauncher
                 if (!string.IsNullOrWhiteSpace(WindowsTunAdapterCleanup.ActualGuid(candidate)))
                     throw new InvalidOperationException(L10n.T(
                         "本次网卡名称已被占用，请重新连接。", "This TUN interface name is already in use. Connect again."));
+                await WindowsTunAdapterCleanup.VerifyCandidateAbsentBeforeLaunchAsync(candidate, cancellationToken);
                 interfaceName = candidate;
+                adapterAbsentBeforeLaunch = true;
             }
         }
         Process? process = null;
@@ -222,7 +225,7 @@ public sealed class PrivilegeLauncher
             Path.GetFullPath(executablePath), Path.GetFullPath(configPath),
             LauncherExecutablePath: PlatformInfo.IsLinux ? "/usr/bin/pkexec"
                 : ProcessLocator.TryGetExecutablePath(process) ?? "",
-            InterfaceName: interfaceName);
+            InterfaceName: interfaceName, AdapterAbsentBeforeLaunch: adapterAbsentBeforeLaunch);
         _launchHandles[process.Id] = process;
         _launchIntents[process.Id] = record;
         try
@@ -251,8 +254,17 @@ public sealed class PrivilegeLauncher
         if (record is null) return;
         if (PlatformInfo.IsWindows)
         {
-            record = await WindowsTunAdapterCleanup.CaptureAsync(record, cancellationToken);
-            await SaveRecordAsync(record, CancellationToken.None);
+            try
+            {
+                record = await WindowsTunAdapterCleanup.CaptureAsync(record, cancellationToken);
+                await SaveRecordAsync(record, CancellationToken.None);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                // A partially installed adapter may not have published its
+                // identity yet. That must not keep a verified owned child alive.
+                // Hardware removal below still requires all ownership proofs.
+            }
         }
         using var process = FindOwnedProcess(record);
         if (process is not null)
@@ -271,6 +283,8 @@ public sealed class PrivilegeLauncher
                 record = await WindowsTunAdapterCleanup.CaptureAsync(record, CancellationToken.None);
                 if (string.IsNullOrWhiteSpace(record.InterfaceGuid)) await Task.Delay(200, CancellationToken.None);
             }
+            if (string.IsNullOrWhiteSpace(record.PnpDeviceId) && CanRecoverPendingWindowsAdapter(record))
+                record = await WindowsTunAdapterCleanup.CapturePendingAsync(record, CancellationToken.None);
             await SaveRecordAsync(record, CancellationToken.None);
             await WindowsTunAdapterCleanup.RemoveAsync(record, Path.GetDirectoryName(_pidPath)!, CancellationToken.None);
         }
@@ -461,6 +475,28 @@ public sealed class PrivilegeLauncher
         }
         catch { return false; }
     }
+
+    private bool CanRecoverPendingWindowsAdapter(OwnedCoreProcess record)
+    {
+        if (!_launchIntents.TryGetValue(record.Pid, out var original)
+            || !_launchHandles.TryGetValue(record.Pid, out var originalProcess)) return false;
+        try
+        {
+            return originalProcess.HasExited && originalProcess.Id == record.Pid
+                && MatchesPendingWindowsIntent(original, record, originalProcess.Id,
+                    originalProcess.StartTime.ToUniversalTime().Ticks, true, PlatformInfo.IsWindows)
+                && RecordedProcessExited(original);
+        }
+        catch { return false; }
+    }
+
+    internal static bool MatchesPendingWindowsIntent(OwnedCoreProcess? original, OwnedCoreProcess record,
+        int observedPid, long observedStartTicks, bool originalExited, bool isWindows) =>
+        isWindows && originalExited && original is not null && !record.Ready
+        && original.AdapterAbsentBeforeLaunch && record.AdapterAbsentBeforeLaunch
+        && string.Equals(original.InterfaceName, record.InterfaceName, StringComparison.Ordinal)
+        && original.Matches(record.Pid, record.StartTimeUtcTicks, record.ExecutablePath, record.ConfigPath, true)
+        && original.Pid == observedPid && original.StartTimeUtcTicks == observedStartTicks;
 
     internal static bool MatchesTrustedLinuxIntent(OwnedCoreProcess? original, OwnedCoreProcess record,
         int observedPid, long observedStartTicks, bool isLinux, bool accessDenied) =>

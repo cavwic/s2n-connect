@@ -95,6 +95,18 @@ static async Task RunChecksAsync(string directory)
         var providerFailure = await RunPowerShellFixture("function Get-CimInstance { throw 'fixture provider unavailable' };"
             + WindowsTunAdapterCleanup.BuildIdentityScript(names[0], guid));
         Check(providerFailure.ExitCode != 0, "provider failure is not treated as adapter absence");
+        var pendingFixture = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(
+            new { Class = "Net", InstanceId = adapter.PNPDeviceID })));
+        var pendingResult = await RunPowerShellFixture("function Get-PnpDevice { [Text.Encoding]::UTF8.GetString("
+            + "[Convert]::FromBase64String('" + pendingFixture + "'))|ConvertFrom-Json };"
+            + WindowsTunAdapterCleanup.BuildPendingIdentityScript(names[0]));
+        var pendingIdentity = pendingResult.ExitCode == 0
+            ? JsonSerializer.Deserialize<WindowsAdapterIdentity>(pendingResult.StdOut) : null;
+        Check(pendingIdentity?.InterfaceGuid == guid && pendingIdentity.PnpDeviceId == adapter.PNPDeviceID,
+            "a partial PnP fixture yields only the exact observed name-derived Wintun instance");
+        var pendingFailure = await RunPowerShellFixture("function Get-PnpDevice { throw 'fixture PnP provider unavailable' };"
+            + WindowsTunAdapterCleanup.BuildPendingIdentityScript(names[0]));
+        Check(pendingFailure.ExitCode != 0, "partial PnP provider failure cannot become an absence proof");
         var removalData = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(removal));
         var parsed = await RunPowerShellFixture("$source=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('"
             + removalData + "'));$tokens=$null;$errors=$null;"
@@ -216,6 +228,29 @@ static async Task RunChecksAsync(string directory)
         && PrivilegeLauncher.LinuxStopScript.Contains("kill -TERM \"$owned_pid\""),
         "the elevated Linux stop helper revalidates start time, executable and exact config arguments");
     Check(!PrivilegeLauncher.LinuxStopScript.Contains('\r'), "the Linux stop helper always uses LF line endings");
+    var pendingIntent = record with { Ready = false, InterfaceName = names[0], AdapterAbsentBeforeLaunch = true };
+    Check(PrivilegeLauncher.MatchesPendingWindowsIntent(pendingIntent, pendingIntent, 123, 456, true, true),
+        "an exited same-run Windows intent with prelaunch absence can recover its partial adapter");
+    Check(!PrivilegeLauncher.MatchesPendingWindowsIntent(null, pendingIntent, 123, 456, true, true),
+        "a persisted partial-adapter record alone is never sufficient ownership proof");
+    Check(!PrivilegeLauncher.MatchesPendingWindowsIntent(pendingIntent with { AdapterAbsentBeforeLaunch = false },
+            pendingIntent, 123, 456, true, true)
+        && !PrivilegeLauncher.MatchesPendingWindowsIntent(pendingIntent,
+            pendingIntent with { AdapterAbsentBeforeLaunch = false }, 123, 456, true, true),
+        "prelaunch absence must exist in both the immutable intent and stored record");
+    Check(!PrivilegeLauncher.MatchesPendingWindowsIntent(pendingIntent,
+            pendingIntent with { InterfaceName = names[1] }, 123, 456, true, true)
+        && !PrivilegeLauncher.MatchesPendingWindowsIntent(pendingIntent,
+            pendingIntent with { ConfigPath = config + ".foreign" }, 123, 456, true, true),
+        "changed alias or config cannot claim a partial PnP device");
+    Check(!PrivilegeLauncher.MatchesPendingWindowsIntent(pendingIntent, pendingIntent, 123, 457, true, true)
+        && !PrivilegeLauncher.MatchesPendingWindowsIntent(pendingIntent, pendingIntent, 124, 456, true, true),
+        "a reused PID or different birth time cannot recover a partial adapter");
+    Check(!PrivilegeLauncher.MatchesPendingWindowsIntent(pendingIntent, pendingIntent, 123, 456, false, true)
+        && !PrivilegeLauncher.MatchesPendingWindowsIntent(pendingIntent, pendingIntent, 123, 456, true, false)
+        && !PrivilegeLauncher.MatchesPendingWindowsIntent(pendingIntent,
+            pendingIntent with { Ready = true }, 123, 456, true, true),
+        "partial recovery requires confirmed process exit, Windows and an unfinished launch");
 
     if (OperatingSystem.IsLinux())
     {
@@ -310,6 +345,42 @@ static async Task RunChecksAsync(string directory)
     File.Delete(state);
     await launcher.StopAsync(selfPath, configPath: config);
     Check(!self.HasExited, "missing ownership record never enumerates and kills same-binary processes");
+    if (OperatingSystem.IsWindows())
+    {
+        var captureFailureMarker = Path.Combine(directory, "capture-failure-child.pid");
+        var fixtureStart = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false, CreateNoWindow = true };
+        if (string.Equals(Path.GetFileNameWithoutExtension(Environment.ProcessPath), "dotnet", StringComparison.OrdinalIgnoreCase))
+            fixtureStart.ArgumentList.Add(Assembly.GetExecutingAssembly().Location);
+        fixtureStart.ArgumentList.Add("--fixture-child");
+        fixtureStart.ArgumentList.Add(captureFailureMarker);
+        using var child = Process.Start(fixtureStart)!;
+        try
+        {
+            var deadline = Stopwatch.StartNew();
+            while (!File.Exists(captureFailureMarker) && !child.HasExited && deadline.Elapsed < TimeSpan.FromSeconds(10))
+                await Task.Delay(20);
+            if (!File.Exists(captureFailureMarker)) throw new InvalidOperationException("Capture-failure fixture did not start.");
+            var childPath = ProcessLocator.TryGetExecutablePath(child)!;
+            await File.WriteAllTextAsync(state, JsonSerializer.Serialize(new OwnedCoreProcess(child.Id,
+                child.StartTime.ToUniversalTime().Ticks, childPath, config, InterfaceName: "unverified-adapter")));
+            try
+            {
+                await launcher.StopAsync(childPath, configPath: config);
+                throw new InvalidOperationException("Unverified adapter cleanup was accepted.");
+            }
+            catch (InvalidOperationException exception)
+            {
+                Check(exception.Message.Contains("ownership") && child.HasExited && File.Exists(state),
+                    "adapter identity failure still stops the verified owned child while retaining hardware cleanup ownership");
+            }
+        }
+        finally
+        {
+            if (!child.HasExited) child.Kill();
+            await child.WaitForExitAsync();
+            File.Delete(state);
+        }
+    }
 
     await File.WriteAllTextAsync(config, JsonSerializer.Serialize(new
     {
