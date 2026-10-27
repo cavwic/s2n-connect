@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0-beta.4
+
+### Changed
+
+- Remove developer symbols from desktop archives and trim unused framework and library code while keeping the bundled runtime.
+- Preserve application reflection metadata for settings, connection profiles and core-process ownership records.
+- Check production serialization, key parsing, archive extraction and bilingual window construction inside the published executable before packaging.
+- Enforce a Windows unpacked-size budget in the release pipeline.
+
 ## 0.4.0-beta.3
 
 ### Changed

@@ -6,12 +6,18 @@
     <RootNamespace>S2N</RootNamespace>
     <ApplicationIcon>Assets/s2n-vps-vpn.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
-    <PublishTrimmed>false</PublishTrimmed>
+    <RuntimeFrameworkVersion>8.0.33</RuntimeFrameworkVersion>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>0.4.0-beta.3</Version>
+    <Version>0.4.0-beta.4</Version>
     <AssemblyVersion>0.4.0.0</AssemblyVersion>
-    <FileVersion>0.4.0.3</FileVersion>
-    <InformationalVersion>0.4.0-beta.3</InformationalVersion>
+    <FileVersion>0.4.0.4</FileVersion>
+    <InformationalVersion>0.4.0-beta.4</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,6 +29,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Preserve application JSON models, anonymous payloads and XAML factories. -->
+    <TrimmerRootAssembly Include="S2N" />
     <AvaloniaResource Include="Assets/**" />
     <EmbeddedResource Include="Server/*.py" />
   </ItemGroup>

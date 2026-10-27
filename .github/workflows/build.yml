@@ -91,10 +91,13 @@ jobs:
           -p:ContinuousIntegrationBuild=true
           --output artifacts/${{ matrix.rid }}
 
-      - name: Include desktop licenses and documentation
+      - name: Prepare desktop package without debug symbols
         shell: pwsh
         run: |
-          ./scripts/copy-release-docs.ps1 -OutputPath "artifacts/${{ matrix.rid }}"
+          ./scripts/prepare-desktop-release.ps1 -OutputPath "artifacts/${{ matrix.rid }}" -OutputRoot artifacts
+
+      - name: Check compact published application
+        run: python scripts/check-desktop-package.py --directory artifacts/${{ matrix.rid }} --rid ${{ matrix.rid }}
 
       - name: Fetch verified core for Windows TUN checks
         if: matrix.rid == 'win-x64'

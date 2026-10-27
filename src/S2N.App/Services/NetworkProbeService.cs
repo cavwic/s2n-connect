@@ -60,7 +60,7 @@ public sealed class NetworkProbeService
             Timeout = ManagedRequestTimeout
         };
         client.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("S2N-Connect", "0.4.0-beta.3"));
+            new ProductInfoHeaderValue("S2N-Connect", "0.4.0-beta.4"));
 
         // Google is the authoritative connectivity test requested by the UI.
         // Any successful HTTP response proves that the managed proxy path works.
@@ -144,7 +144,7 @@ public sealed class NetworkProbeService
             Timeout = TimeSpan.FromSeconds(timeoutSeconds)
         };
         client.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("S2N-Connect", "0.4.0-beta.3"));
+            new ProductInfoHeaderValue("S2N-Connect", "0.4.0-beta.4"));
         return client;
     }
 
