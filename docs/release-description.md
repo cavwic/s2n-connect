@@ -1,6 +1,6 @@
 | 系统 / Platform | 直接下载 / Download |
 | --- | --- |
-| Windows | [常见电脑 / Most PCs (x64)](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-win-arm64.zip) |
+| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-win-arm64.zip) |
 | macOS | [Apple 芯片 / Apple silicon](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-osx-arm64.tar.gz) · [Intel](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-osx-x64.tar.gz) |
 | Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-linux-arm64.tar.gz) |
 | 安卓 / Android 8.0+ | [下载 APK / Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/{{TAG}}/S2N-{{TAG}}-android-universal.apk) |

@@ -15,7 +15,7 @@
 
 | 系统 | 直接下载 |
 | --- | --- |
-| Windows | [常见电脑（x64）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-arm64.zip) |
+| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-arm64.zip) |
 | macOS | [Apple 芯片（M 系列）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-arm64.tar.gz) · [Intel 芯片](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-x64.tar.gz) |
 | Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-arm64.tar.gz) |
 | 安卓 8.0+ | [下载 APK（ARM64 / x86_64）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-android-universal.apk) |
@@ -71,7 +71,7 @@ Service closures, peak-hour congestion, traffic limits, and privacy concerns can
 
 | Platform | Direct download |
 | --- | --- |
-| Windows | [Most PCs (x64)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-arm64.zip) |
+| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-arm64.zip) |
 | macOS | [Apple silicon (M series)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-arm64.tar.gz) · [Intel](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-x64.tar.gz) |
 | Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-arm64.tar.gz) |
 | Android 8.0+ | [Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-android-universal.apk) |
