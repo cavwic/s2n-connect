@@ -370,7 +370,7 @@ public partial class MainWindow : Window
             if (showSuccessDialog)
             {
                 await ShowSuccessAsync(
-                    L10n.T("VPS 连接成功：", "VPS connection succeeded: ")
+                    L10n.T("SSH 管理连接成功：", "SSH management connection succeeded: ")
                     + result.ServerInfo.Replace(Environment.NewLine, " / "));
             }
 
@@ -379,7 +379,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             await ShowErrorAsync(
-                L10n.T("VPS 连接失败：", "VPS connection failed: ")
+                L10n.T("SSH 管理连接失败：", "SSH management connection failed: ")
                 + ex.Message);
             return false;
         }
@@ -567,7 +567,7 @@ public partial class MainWindow : Window
                 _settings.VpsProfilePath);
             if (_profile is null)
                 throw new InvalidOperationException(
-                    L10n.T("请先部署 VPS。", "Deploy the VPS first."));
+                    L10n.T("请先部署 VPS 或导入连接配置。", "Deploy a VPS or import a connection profile first."));
 
             await _singBoxManager!.ConnectAsync(
                 _settings,

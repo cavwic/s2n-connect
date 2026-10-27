@@ -42,24 +42,24 @@
       <Border Classes="card">
         <StackPanel Spacing="8">
           <TextBlock Text="部署" FontSize="19" FontWeight="SemiBold"/>
-          <Grid ColumnDefinitions="135,*,Auto"
+          <Grid ColumnDefinitions="170,*,Auto"
                 RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                 RowSpacing="7" ColumnSpacing="8">
             <TextBlock Grid.Row="0" Text="VPS 地址" VerticalAlignment="Center"/>
             <TextBox Grid.Row="0" Grid.Column="1" x:Name="VpsHostBox"
                      PlaceholderText="例如 203.0.113.10"/>
             <Button Grid.Row="0" Grid.Column="2" x:Name="TestVpsButton"
-                    Content="测试 VPS" Click="TestVps_Click"/>
+                    Content="测试 SSH" Click="TestVps_Click"/>
 
-            <TextBlock Grid.Row="1" Text="SSH 用户 / 端口" VerticalAlignment="Center"/>
+            <TextBlock Grid.Row="1" Text="SSH 用户 / 管理端口" VerticalAlignment="Center"/>
             <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,120" ColumnSpacing="8">
               <TextBox x:Name="VpsUserBox" PlaceholderText="root"/>
               <TextBox Grid.Column="1"
          x:Name="VpsPortBox"
-         Text="22"
          MaxLength="5"
          HorizontalContentAlignment="Center"
-         PlaceholderText="22"/>
+         PlaceholderText="实际 SSH 端口"
+         ToolTip.Tip="填写服务器实际的 SSH TCP 端口。22 无法访问时，须先在服务器配置并放行备用端口；VPN 的 UDP 443 不用于 SSH。"/>
             </Grid>
 
             <TextBlock Grid.Row="2" Text="SSH 私钥" VerticalAlignment="Center"/>
@@ -93,10 +93,10 @@
               <ComboBoxItem Tag="hysteria2" Content="UDP 443（Hysteria 2）"/>
               <ComboBoxItem Tag="vless" Content="TCP 443（VLESS + REALITY）"/>
             </ComboBox>
-            <TextBlock Grid.Row="7" Text="SSH 代理端口" VerticalAlignment="Center"/>
+            <TextBlock Grid.Row="7" Text="本机 HTTP 代理" VerticalAlignment="Center"/>
             <TextBox Grid.Row="7" Grid.Column="1" x:Name="SshProxyPortBox"
                      Text="0" MaxLength="5"
-                     ToolTip.Tip="0 表示直连；SSH 无法直连时，可填写本机 HTTP 代理端口。"/>
+                     ToolTip.Tip="填写已运行的本机 HTTP 代理端口；0 表示直连。仅用于 SSH 管理连接，不会修改服务器端口。"/>
           </Grid>
         </StackPanel>
       </Border>
@@ -143,6 +143,8 @@
             <Button Content="退出" Click="Exit_Click"/>
           </WrapPanel>
           <TextBlock Text="手机配置含连接凭据，请妥善保管。"
+                     Opacity="0.65" FontSize="12" TextWrapping="Wrap"/>
+          <TextBlock Text="已有节点：安装本地核心后导入连接配置，即可连接，无需 SSH。"
                      Opacity="0.65" FontSize="12" TextWrapping="Wrap"/>
         </StackPanel>
       </Border>

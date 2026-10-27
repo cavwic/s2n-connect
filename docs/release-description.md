@@ -24,9 +24,9 @@ S2N Connect 用于在自有 VPS 上部署 VPN 服务，提供桌面端与 Androi
 
 ## 使用指南
 
-自备 Ubuntu / Debian VPS 和 root SSH 私钥，确保 SSH 可用并放行 UDP 443；TCP 模式需放行 TCP 443。已有节点可直接导入配置。
+自备 Ubuntu / Debian VPS，放行 UDP 443（TCP 模式则放行 TCP 443）。首次部署需 root 私钥及实际 SSH 管理端口；22 不通时，使用服务器已配置的备用端口或已有本机 HTTP 代理。UDP 443 不代替 SSH。
 
-1. **电脑：** 从上表下载对应系统和架构的包，完整解压并运行。填写 VPS / SSH 信息，点击“测试 VPS”核对指纹，再点“一键部署”→“连接”，允许管理员授权。
+1. **电脑：** 完整解压下载包并运行 `S2N.exe`（Windows 无需另装 .NET）或 `S2N`（macOS / Linux）。新节点填写 VPS / SSH 信息，“测试 SSH”核对指纹后“一键部署”→“连接”；已有节点安装本地核心后“导入连接配置”→“连接”，无需 SSH。
 2. **安卓（8.0+，ARM64 / x86_64）：** 从上表下载并安装 APK。在电脑上“导出手机配置”，手机上“选择配置文件”→“连接 VPN”，允许 VPN 授权。
 3. **iOS：** 在电脑上“导出 iOS 配置”，按 [iOS 连接指南](https://github.com/cavwic/s2n-connect/blob/main/docs/ios.md)导入 Hiddify 等客户端，允许 VPN 授权后连接。
 

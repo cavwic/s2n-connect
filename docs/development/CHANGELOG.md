@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0-beta.2
+
+### Fixed
+
+- Clarify server SSH management ports, local HTTP proxy ports, and VPN traffic on UDP 443 in both languages.
+- Report SSH connection failures with the selected route and port, distinguish network and authentication failures, and validate custom management ports.
+- Document self-contained Windows startup and connecting to an existing server by importing a profile without SSH.
+
 ## 0.4.0-beta.1
 
 ### Added

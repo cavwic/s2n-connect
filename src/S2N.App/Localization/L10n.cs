@@ -98,8 +98,11 @@ public static class L10n
                 ["部署"] = "Deployment",
                 ["VPS 地址"] = "VPS address",
                 ["例如 203.0.113.10"] = "For example, 203.0.113.10",
-                ["测试 VPS"] = "Test VPS",
-                ["SSH 用户 / 端口"] = "SSH user / port",
+                ["测试 SSH"] = "Test SSH",
+                ["SSH 用户 / 管理端口"] = "SSH user / port",
+                ["实际 SSH 端口"] = "SSH port",
+                ["填写服务器实际的 SSH TCP 端口。22 无法访问时，须先在服务器配置并放行备用端口；VPN 的 UDP 443 不用于 SSH。"] =
+                    "Use the server's actual SSH TCP port. If port 22 is unreachable, configure and allow an alternative on the server first. VPN traffic on UDP 443 does not provide SSH access.",
                 ["SSH 私钥"] = "SSH private key",
                 ["连接成功后才保存路径"] =
                     "The path is saved only after a successful connection",
@@ -115,9 +118,11 @@ public static class L10n
                 ["部署协议"] = "Deployment protocol",
                 ["UDP 443（Hysteria 2）"] = "UDP 443 (Hysteria 2)",
                 ["TCP 443（VLESS + REALITY）"] = "TCP 443 (VLESS + REALITY)",
-                ["SSH 代理端口"] = "SSH proxy port",
-                ["0 表示直连；SSH 无法直连时，可填写本机 HTTP 代理端口。"] =
-                    "Use 0 for a direct connection, or enter a local HTTP proxy port if direct SSH is unavailable.",
+                ["本机 HTTP 代理"] = "Local HTTP proxy",
+                ["填写已运行的本机 HTTP 代理端口；0 表示直连。仅用于 SSH 管理连接，不会修改服务器端口。"] =
+                    "Enter the port of a running local HTTP proxy, or 0 for a direct connection. This affects SSH management only and does not change the server's port.",
+                ["已有节点：安装本地核心后导入连接配置，即可连接，无需 SSH。"] =
+                    "Existing server: install the local core and import a connection profile. SSH is not required to connect.",
                 ["导入连接配置"] = "Import profile",
                 ["导出 iOS 配置"] = "Export iOS profile",
                 ["一键部署"] = "One-click deploy",

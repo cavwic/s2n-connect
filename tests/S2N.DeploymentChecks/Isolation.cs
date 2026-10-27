@@ -14,7 +14,8 @@ namespace S2N.Localization
 {
     public static class L10n
     {
-        public static string T(string chinese, string english) => english;
+        public static string T(string chinese, string english) =>
+            System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "zh" ? chinese : english;
         public static string TranslateTechnicalMessage(string text) => text;
     }
 }

@@ -15,10 +15,10 @@
 
 | 系统 | 直接下载 |
 | --- | --- |
-| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-arm64.zip) |
-| macOS | [Apple 芯片（M 系列）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-arm64.tar.gz) · [Intel 芯片](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-x64.tar.gz) |
-| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-arm64.tar.gz) |
-| 安卓 8.0+ | [下载 APK（ARM64 / x86_64）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-android-universal.apk) |
+| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-win-arm64.zip) |
+| macOS | [Apple 芯片（M 系列）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-osx-arm64.tar.gz) · [Intel 芯片](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-osx-x64.tar.gz) |
+| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-linux-arm64.tar.gz) |
+| 安卓 8.0+ | [下载 APK（ARM64 / x86_64）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-android-universal.apk) |
 | iOS | [Hiddify（第三方客户端）](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) · [连接指南](docs/ios.md) |
 
 ## 项目简介
@@ -33,16 +33,18 @@ S2N Connect 用于在自有 VPS 上部署 VPN 服务，提供桌面端与 Androi
 
 ## 使用指南
 
-**准备：** Ubuntu / Debian VPS、root SSH 私钥，以及可用的 SSH 端口（默认 22）。在服务器和云防火墙中放行 UDP 443；使用 TCP 模式时放行 TCP 443。
+**准备：** Ubuntu / Debian VPS。首次部署需 root SSH 私钥和服务器实际的 SSH TCP 端口；VPN 服务需放行 UDP 443（TCP 模式则放行 TCP 443）。
 
 **电脑：**
 
-1. 从上表下载对应系统和架构的包，完整解压后运行 `S2N.exe`（Windows）或 `S2N`（macOS / Linux）。
-2. 填写 VPS 地址、SSH 端口和 root 用户，选择私钥；点击“测试 VPS”并核对服务器指纹。
+1. 下载对应系统和架构的包，完整解压后运行 `S2N.exe`（Windows）或 `S2N`（macOS / Linux）。Windows 无需另装 .NET；请勿单独移动 EXE。
+2. 新建节点时，填写 VPS 地址、实际 SSH 管理端口和 root 用户，选择私钥；点击“测试 SSH”并核对服务器指纹。
 3. 默认使用 UDP 443（Hysteria 2），点击“一键部署”，选择本地安装目录，等待完成。
 4. 按需设置“规则管理”或全局模式，点击“连接”并允许管理员授权；点击“停止”断开。
 
-升级前先在旧版停止连接。已有节点可通过“导入连接配置”复用，无需重新部署。SSH 无法直连时，可填写现有本机 HTTP 代理端口。
+**已有节点：** 点击“选择并安装”安装本地核心，再“导入连接配置”→“连接”，无需 SSH 或重新部署。升级前先在旧版停止连接。
+
+**SSH 22 不通时：** 使用服务器已配置并放行的备用 SSH 端口，或填写正在运行的“本机 HTTP 代理”端口（0 表示直连）。备用端口须先在服务商控制台设置；UDP 443 用于 VPN，不代替 SSH。
 
 **安卓（Android 8.0+，ARM64 / x86_64）：**
 
@@ -71,10 +73,10 @@ Service closures, peak-hour congestion, traffic limits, and privacy concerns can
 
 | Platform | Direct download |
 | --- | --- |
-| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-arm64.zip) |
-| macOS | [Apple silicon (M series)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-arm64.tar.gz) · [Intel](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-x64.tar.gz) |
-| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-arm64.tar.gz) |
-| Android 8.0+ | [Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-android-universal.apk) |
+| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-win-arm64.zip) |
+| macOS | [Apple silicon (M series)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-osx-arm64.tar.gz) · [Intel](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-osx-x64.tar.gz) |
+| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-linux-arm64.tar.gz) |
+| Android 8.0+ | [Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-android-universal.apk) |
 | iOS | [Hiddify (third-party client)](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) · [Connection guide](docs/ios.md#ios-connection-guide) |
 
 ## Overview
@@ -89,16 +91,18 @@ S2N Connect deploys a VPN service on your own VPS, provides desktop and Android 
 
 ## Usage
 
-**Prepare:** An Ubuntu / Debian VPS, a root SSH private key, and working SSH access (port 22 by default). Allow UDP 443 through the server and cloud firewalls, or TCP 443 if you select the TCP protocol.
+**Prepare:** An Ubuntu / Debian VPS. Initial deployment requires a root SSH private key and the server's actual SSH TCP port. Allow UDP 443 for the VPN service, or TCP 443 if you select the TCP protocol.
 
 **Desktop:**
 
-1. Download your system and architecture's package from the table above, extract it fully, and run `S2N.exe` (Windows) or `S2N` (macOS / Linux).
-2. Enter the VPS address, SSH port, and root user, then select your private key. Click **Test VPS** and verify the server fingerprint.
+1. Download your platform's package, extract it fully, and run `S2N.exe` (Windows) or `S2N` (macOS / Linux). Windows needs no separate .NET installation; keep the EXE with the other extracted files.
+2. For a new server, enter its address, actual SSH management port, and root user, then select your private key. Click **Test SSH** and verify the server fingerprint.
 3. Leave UDP 443 (Hysteria 2) selected, click **One-click deploy**, choose a local installation directory, and wait for completion.
 4. Set **Rules** or global mode as needed. Click **Connect** and grant administrator access; click **Stop** to disconnect.
 
-Stop the previous version before upgrading. Use **Import profile** to reuse an existing server without redeploying it. If direct SSH is unavailable, enter the port of an existing local HTTP proxy.
+**Existing server:** Use **Select and install** to install the local core, then **Import profile** → **Connect**. SSH and redeployment are not required. Stop the previous version before upgrading.
+
+**If SSH port 22 is unreachable:** Use an alternative SSH port already configured and allowed on the server, or a running **Local HTTP proxy** (0 means direct). Configure alternative ports through your provider's console first. UDP 443 carries VPN traffic and does not provide SSH access.
 
 **Android (8.0+, ARM64 / x86_64):**
 
