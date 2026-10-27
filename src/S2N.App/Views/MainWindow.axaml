@@ -43,7 +43,7 @@
         <StackPanel Spacing="8">
           <TextBlock Text="部署" FontSize="19" FontWeight="SemiBold"/>
           <Grid ColumnDefinitions="135,*,Auto"
-                RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                 RowSpacing="7" ColumnSpacing="8">
             <TextBlock Grid.Row="0" Text="VPS 地址" VerticalAlignment="Center"/>
             <TextBox Grid.Row="0" Grid.Column="1" x:Name="VpsHostBox"
@@ -87,6 +87,16 @@
               <ProgressBar x:Name="ProgressBar" Width="210"
                            Minimum="0" Maximum="100" IsVisible="False"/>
             </StackPanel>
+            <TextBlock Grid.Row="6" Text="部署协议" VerticalAlignment="Center"/>
+            <ComboBox Grid.Row="6" Grid.Column="1" x:Name="TransportBox"
+                      HorizontalAlignment="Stretch" SelectionChanged="Transport_SelectionChanged">
+              <ComboBoxItem Tag="hysteria2" Content="UDP 443（Hysteria 2）"/>
+              <ComboBoxItem Tag="vless" Content="TCP 443（VLESS + REALITY）"/>
+            </ComboBox>
+            <TextBlock Grid.Row="7" Text="SSH 代理端口" VerticalAlignment="Center"/>
+            <TextBox Grid.Row="7" Grid.Column="1" x:Name="SshProxyPortBox"
+                     Text="0" MaxLength="5"
+                     ToolTip.Tip="0 表示直连；SSH 无法直连时，可填写本机 HTTP 代理端口。"/>
           </Grid>
         </StackPanel>
       </Border>
@@ -126,7 +136,9 @@
             <Button x:Name="StopButton" Content="停止"
                     Click="Stop_Click"/>
             <Button Content="规则管理" Click="Rules_Click"/>
+            <Button Content="导入连接配置" Click="ImportProfile_Click"/>
             <Button Content="导出手机配置" Click="ExportMobileProfile_Click"/>
+            <Button Content="导出 iOS 配置" Click="ExportIosProfile_Click"/>
             <Button Content="刷新状态" Click="Refresh_Click"/>
             <Button Content="退出" Click="Exit_Click"/>
           </WrapPanel>

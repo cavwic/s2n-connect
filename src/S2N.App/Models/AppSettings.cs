@@ -10,6 +10,9 @@ public sealed class AppSettings
     public string SingBoxExecutablePath { get; set; } = "";
     public string ManagedConfigPath { get; set; } = "";
     public string VpsProfilePath { get; set; } = "";
+    public string PreferredTransport { get; set; } = "hysteria2";
+    public int LocalProxyPort { get; set; } = 2080;
+    public int SshProxyPort { get; set; }
 
     public string ThemeMode { get; set; } = "system";
     public bool GlobalMode { get; set; }
@@ -42,11 +45,15 @@ public sealed class AppSettings
 
 public sealed class VpsProfile
 {
+    // Missing transport fields retain compatibility with profiles from earlier releases.
+    public string Transport { get; set; } = "vless";
     public string ServerIp { get; set; } = "";
     public int ServerPort { get; set; } = 443;
     public string Uuid { get; set; } = "";
     public string PublicKey { get; set; } = "";
     public string ShortId { get; set; } = "";
     public string ServerName { get; set; } = "www.bing.com";
+    public string Password { get; set; } = "";
+    public string CertificatePem { get; set; } = "";
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

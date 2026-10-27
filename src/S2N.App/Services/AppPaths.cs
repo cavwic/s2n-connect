@@ -8,6 +8,15 @@ public static class AppPaths
     {
         get
         {
+            var isolatedDirectory = Environment.GetEnvironmentVariable("S2N_DATA_DIRECTORY");
+            if (!string.IsNullOrWhiteSpace(isolatedDirectory))
+            {
+                if (!Path.IsPathFullyQualified(isolatedDirectory))
+                    throw new InvalidDataException("S2N_DATA_DIRECTORY must be an absolute path.");
+                var fullDirectory = Path.GetFullPath(isolatedDirectory);
+                Directory.CreateDirectory(fullDirectory);
+                return fullDirectory;
+            }
             string path;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

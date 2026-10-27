@@ -5,6 +5,7 @@ namespace S2N.Services;
 
 public sealed class SettingsStore
 {
+    private static readonly SemaphoreSlim SettingsWriteGate = new(1, 1);
     private static readonly JsonSerializerOptions Options = new()
     {
         WriteIndented = true,
@@ -30,16 +31,28 @@ public sealed class SettingsStore
         AppSettings settings,
         CancellationToken cancellationToken = default)
     {
-        Normalize(settings);
-        Directory.CreateDirectory(AppPaths.DataDirectory);
-        var temp = AppPaths.SettingsPath + ".tmp";
-        await using (var stream = File.Create(temp))
+        await SettingsWriteGate.WaitAsync(cancellationToken);
+        try
         {
-            await JsonSerializer.SerializeAsync(
-                stream, settings, Options, cancellationToken);
+            Normalize(settings);
+            Directory.CreateDirectory(AppPaths.DataDirectory);
+            var temporary = AppPaths.SettingsPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                await using (var stream = new FileStream(temporary, FileMode.CreateNew,
+                    FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
+                {
+                    if (!OperatingSystem.IsWindows())
+                        File.SetUnixFileMode(temporary, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+                    await JsonSerializer.SerializeAsync(stream, settings, Options, cancellationToken);
+                    await stream.FlushAsync(cancellationToken);
+                }
+                cancellationToken.ThrowIfCancellationRequested();
+                File.Move(temporary, AppPaths.SettingsPath, overwrite: true);
+            }
+            finally { if (File.Exists(temporary)) File.Delete(temporary); }
         }
-
-        File.Move(temp, AppPaths.SettingsPath, true);
+        finally { SettingsWriteGate.Release(); }
     }
 
     public async Task<VpsProfile?> LoadVpsProfileAsync(
@@ -57,10 +70,21 @@ public sealed class SettingsStore
         string path,
         CancellationToken cancellationToken = default)
     {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        await using var stream = File.Create(path);
-        await JsonSerializer.SerializeAsync(
-            stream, profile, Options, cancellationToken);
+        var fullPath = Path.GetFullPath(path);
+        Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
+        var temporary = fullPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            await using (var stream = new FileStream(temporary, FileMode.CreateNew,
+                FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous))
+            {
+                if (!OperatingSystem.IsWindows())
+                    File.SetUnixFileMode(temporary, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+                await JsonSerializer.SerializeAsync(stream, profile, Options, cancellationToken);
+            }
+            File.Move(temporary, fullPath, overwrite: true);
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
 
     private static AppSettings CreateDefaults() =>
@@ -76,6 +100,13 @@ public sealed class SettingsStore
             settings.ManagedConfigPath = AppPaths.ManagedConfigPath;
         if (string.IsNullOrWhiteSpace(settings.VpsProfilePath))
             settings.VpsProfilePath = AppPaths.VpsProfilePath;
+        settings.PreferredTransport = string.Equals(settings.PreferredTransport,
+            "vless", StringComparison.OrdinalIgnoreCase) ? "vless" : "hysteria2";
+        if (settings.LocalProxyPort is < 1024 or > 65535)
+            settings.LocalProxyPort = 2080;
+        if (settings.SshProxyPort is < 0 or > 65535
+            || settings.SshProxyPort is > 0 and < 1024)
+            settings.SshProxyPort = 0;
 
         settings.ThemeMode = (settings.ThemeMode ?? "").Trim().ToLowerInvariant() switch
         {

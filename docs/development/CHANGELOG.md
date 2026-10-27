@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.4.0-beta.1
+
+### Added
+
+- Hysteria 2 over UDP 443 for desktop deployment, existing connection imports, Android profiles, and portable iOS client configurations. Existing VLESS + REALITY profiles remain compatible.
+- Fingerprint-verified SSH deployment with an optional local HTTP proxy, a checksum-pinned Hysteria server binary, and explicit certificate trust without disabling TLS validation.
+- Isolated real QUIC tests for valid connections, rejected certificates and credentials, plus real Windows TUN creation and cancellation checks.
+
+### Fixed
+
+- Allocate a fresh Windows TUN identity before the first launch to avoid stale adapter name/GUID collisions.
+- Verify core ownership by process identity and configuration, preserve unrelated VPNs, and wait for actual adapter/listener readiness.
+- Verify UDP connections using real traffic instead of a TCP port probe; preserve existing server services and credentials during deployment.
+- Resume an incomplete release draft without replacing published assets.
+
 ## 0.3.0-beta.2
 
 ### Changed

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><RollForward>LatestMajor</RollForward></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/S2N.App/Models/AppSettings.cs" Link="AppSettings.cs" />
+    <Compile Include="../../src/S2N.App/Services/ProfileImportService.cs" Link="ProfileImportService.cs" />
+    <Compile Include="../../src/S2N.App/Services/VpsProfileValidator.cs" Link="VpsProfileValidator.cs" />
+    <Compile Include="../../src/S2N.App/Services/SettingsStore.cs" Link="SettingsStore.cs" />
+    <Compile Include="../S2N.ConfigChecks/Isolation.cs" Link="Isolation.cs" />
+  </ItemGroup>
+</Project>

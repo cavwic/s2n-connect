@@ -9,52 +9,42 @@ public sealed class MobileProfileExportService
     public string Serialize(VpsProfile? profile)
     {
         if (profile is null)
-            throw new InvalidDataException(
-                L10n.T("请先部署 VPS，再导出手机配置。", "Deploy the VPS before exporting a mobile profile."));
-
-        var server = (profile.ServerIp ?? "").Trim();
-        var serverName = (profile.ServerName ?? "").Trim();
-        var publicKey = (profile.PublicKey ?? "").Trim();
-        var shortId = (profile.ShortId ?? "").Trim();
-
-        if (Uri.CheckHostName(server) == UriHostNameType.Unknown
-            || server.Length == 0)
-            throw InvalidField("服务器地址", "server address");
-        if (profile.ServerPort is < 1 or > 65535)
-            throw InvalidField("服务器端口", "server port");
-        if (!Guid.TryParse(profile.Uuid, out var uuid) || uuid == Guid.Empty)
-            throw InvalidField("UUID", "UUID");
-        if (publicKey.Length != 43
-            || !publicKey.All(character => char.IsAsciiLetterOrDigit(character)
-                || character is '-' or '_'))
-            throw InvalidField("REALITY 公钥", "REALITY public key");
-        if (shortId.Length > 16
-            || shortId.Length % 2 != 0
-            || !shortId.All(Uri.IsHexDigit))
-            throw InvalidField("REALITY short ID", "REALITY short ID");
-        if (serverName.Length == 0
-            || Uri.CheckHostName(serverName) == UriHostNameType.Unknown)
-            throw InvalidField("TLS 服务器名称", "TLS server name");
-
-        // Explicitly allow only client connection fields. Never serialize
-        // AppSettings or add SSH credentials to the mobile export.
-        var exported = new
-        {
-            serverIp = server,
-            serverPort = profile.ServerPort,
-            uuid = uuid.ToString(),
-            publicKey,
-            shortId = shortId.ToLowerInvariant(),
-            serverName,
-            updatedAt = profile.UpdatedAt
-        };
-        return JsonSerializer.Serialize(
-            exported,
-            new JsonSerializerOptions { WriteIndented = true });
+            throw new InvalidDataException(L10n.T(
+                "请先部署 VPS 或导入连接配置，再导出手机配置。",
+                "Deploy the VPS or import a connection profile before exporting a mobile profile."));
+        profile = VpsProfileValidator.Normalize(profile);
+        // Connection credentials only; never SSH keys, VPS private keys or local settings.
+        object exported = profile.Transport == "hysteria2"
+            ? new
+            {
+                schemaVersion = 2, transport = "hysteria2",
+                serverIp = profile.ServerIp, serverPort = profile.ServerPort,
+                password = profile.Password, serverName = profile.ServerName,
+                certificatePem = profile.CertificatePem, updatedAt = profile.UpdatedAt
+            }
+            : new
+            {
+                serverIp = profile.ServerIp, serverPort = profile.ServerPort,
+                uuid = profile.Uuid, publicKey = profile.PublicKey,
+                shortId = profile.ShortId, serverName = profile.ServerName,
+                updatedAt = profile.UpdatedAt
+            };
+        return JsonSerializer.Serialize(exported, new JsonSerializerOptions { WriteIndented = true });
     }
 
-    private static InvalidDataException InvalidField(string chinese, string english) =>
-        new(L10n.T(
-            $"VPS 配置中的{chinese}无效，请检查配置或重新部署。",
-            $"The VPS profile contains an invalid {english}. Check the profile or redeploy."));
+    public string ExportConnectionUri(VpsProfile profile)
+    {
+        profile = VpsProfileValidator.Normalize(profile);
+        var host = profile.ServerIp.Contains(':') ? $"[{profile.ServerIp}]" : profile.ServerIp;
+        if (profile.Transport == "hysteria2")
+        {
+            // A URI cannot carry a trusted CA certificate. Never substitute insecure=1.
+            if (profile.CertificatePem.Length > 0)
+                throw new InvalidOperationException(L10n.T(
+                    "此连接使用专属证书，请导出 JSON 配置并在支持自定义证书的客户端中导入。",
+                    "This connection uses a custom certificate. Export JSON and use a client that supports custom certificate trust."));
+            return $"hysteria2://{Uri.EscapeDataString(profile.Password)}@{host}:{profile.ServerPort}/?sni={Uri.EscapeDataString(profile.ServerName)}#S2N";
+        }
+        return $"vless://{profile.Uuid}@{host}:{profile.ServerPort}?security=reality&type=tcp&flow=xtls-rprx-vision&pbk={Uri.EscapeDataString(profile.PublicKey)}&sid={profile.ShortId}&sni={Uri.EscapeDataString(profile.ServerName)}#S2N";
+    }
 }

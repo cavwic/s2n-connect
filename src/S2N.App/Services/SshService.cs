@@ -26,14 +26,7 @@ public sealed class SshService
                 settings.VpsUser,
                 key);
 
-            var info = new ConnectionInfo(
-                settings.VpsHost,
-                settings.VpsPort,
-                settings.VpsUser,
-                auth)
-            {
-                Timeout = TimeSpan.FromSeconds(10)
-            };
+            var info = CreateConnectionInfo(settings, auth, TimeSpan.FromSeconds(10));
 
             using var client = new SshClient(info);
             string? observedFingerprint = null;
@@ -104,14 +97,7 @@ public sealed class SshService
             var auth = new PrivateKeyAuthenticationMethod(
                 settings.VpsUser,
                 key);
-            var info = new ConnectionInfo(
-                settings.VpsHost,
-                settings.VpsPort,
-                settings.VpsUser,
-                auth)
-            {
-                Timeout = TimeSpan.FromSeconds(15)
-            };
+            var info = CreateConnectionInfo(settings, auth, TimeSpan.FromSeconds(15));
 
             using var client = new SshClient(info);
             client.HostKeyReceived += (_, e) =>
@@ -142,6 +128,25 @@ public sealed class SshService
             client.Disconnect();
             return output;
         }, cancellationToken);
+    }
+
+    internal static ConnectionInfo CreateConnectionInfo(
+        AppSettings settings,
+        AuthenticationMethod authentication,
+        TimeSpan timeout)
+    {
+        if (settings.SshProxyPort != 0 && settings.SshProxyPort is < 1024 or > 65535)
+            throw new ArgumentOutOfRangeException(nameof(settings.SshProxyPort), L10n.T(
+                "本机 SSH 代理端口须为 1024–65535；填 0 使用直连。",
+                "The local SSH proxy port must be 1024–65535, or 0 for a direct connection."));
+        // Explicit local HTTP CONNECT only. The SSH host key is still checked
+        // against the original VPS address and its previously approved fingerprint.
+        var info = settings.SshProxyPort == 0
+            ? new ConnectionInfo(settings.VpsHost, settings.VpsPort, settings.VpsUser, authentication)
+            : new ConnectionInfo(settings.VpsHost, settings.VpsPort, settings.VpsUser,
+                ProxyTypes.Http, "127.0.0.1", settings.SshProxyPort, "", "", authentication);
+        info.Timeout = timeout;
+        return info;
     }
 
     public static void ValidatePrivateKey(string path)

@@ -30,6 +30,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _statusTimer;
     private int _refreshInProgress;
     private int _autoConnectInProgress;
+    private int _connectionMutationInProgress;
     private bool _loadingPreferences;
     private bool _initialized;
 
@@ -140,6 +141,7 @@ public partial class MainWindow : Window
         VpsPortBox.Text = _settings.VpsPort.ToString();
         SshKeyBox.Text = _settings.SshKeyPath;
         SingBoxPathBox.Text = _settings.SingBoxInstallDirectory;
+        SshProxyPortBox.Text = _settings.SshProxyPort.ToString();
 
         var discovered = await _installDiscovery.DiscoverAsync(_settings);
         if (!string.IsNullOrWhiteSpace(discovered)
@@ -156,6 +158,14 @@ public partial class MainWindow : Window
 
         _profile = await _settingsStore.LoadVpsProfileAsync(
             _settings.VpsProfilePath);
+        if (_profile is not null)
+            _settings.PreferredTransport = _profile.Transport;
+        _loadingPreferences = true;
+        try
+        {
+            TransportBox.SelectedIndex = _settings.PreferredTransport == "vless" ? 1 : 0;
+        }
+        finally { _loadingPreferences = false; }
         await _settingsStore.SaveAsync(_settings);
         await RefreshStateAsync();
     }
@@ -184,7 +194,7 @@ public partial class MainWindow : Window
             else
             {
                 var proxy =
-                    await _networkProbe.ProbeManagedConnectionAsync();
+                    await _networkProbe.ProbeManagedConnectionAsync(localProxyPort: _settings.LocalProxyPort);
 
                 if (proxy.Connected)
                 {
@@ -208,15 +218,17 @@ public partial class MainWindow : Window
 
             if (_profile is not null)
             {
-                var portOpen = await _networkProbe.IsTcpPortOpenAsync(
-                    _profile.ServerIp,
-                    _profile.ServerPort,
-                    TimeSpan.FromSeconds(2));
-                VpsStatusText.Text = portOpen
-                    ? L10n.T("已部署", "Deployed")
-                    : L10n.T(
-                        "已配置，但 TCP 443 当前不可达",
-                        "Configured, but TCP 443 is currently unreachable");
+                if (_profile.Transport == "hysteria2")
+                    VpsStatusText.Text = running && ConnectionText.Text == L10n.T("已连接", "Connected")
+                        ? L10n.T("UDP 通道已验证", "UDP connection verified")
+                        : L10n.T("UDP 已配置，连接后验证", "UDP configured; connect to verify");
+                else
+                {
+                    var portOpen = await _networkProbe.IsTcpPortOpenAsync(
+                        _profile.ServerIp, _profile.ServerPort, TimeSpan.FromSeconds(3));
+                    VpsStatusText.Text = portOpen ? L10n.T("TCP 端口可达", "TCP port reachable")
+                        : L10n.T("TCP 端口暂不可达", "TCP port currently unreachable");
+                }
             }
             else
             {
@@ -291,8 +303,11 @@ public partial class MainWindow : Window
 
     private async void TestVps_Click(
         object? sender,
-        RoutedEventArgs e) =>
-        await TestVpsInternalAsync();
+        RoutedEventArgs e)
+    {
+        if (Volatile.Read(ref _connectionMutationInProgress) == 0)
+            await TestVpsInternalAsync();
+    }
 
     private async Task<bool> TestVpsInternalAsync(
         bool showSuccessDialog = true)
@@ -316,6 +331,11 @@ public partial class MainWindow : Window
             }
 
             _settings.VpsPort = vpsPort;
+            if (!int.TryParse(SshProxyPortBox.Text, out var sshProxyPort)
+                || sshProxyPort is < 0 or > 65535 || sshProxyPort is > 0 and < 1024)
+                throw new InvalidOperationException(L10n.T(
+                    "SSH 代理端口应为 0 或 1024–65535。", "Use 0 or a port from 1024 to 65535 for the SSH proxy."));
+            _settings.SshProxyPort = sshProxyPort;
             _keyPassphrase = KeyPassphraseBox.Text ?? "";
             if (string.IsNullOrWhiteSpace(_settings.VpsHost))
                 throw new InvalidOperationException(
@@ -432,8 +452,11 @@ public partial class MainWindow : Window
         object? sender,
         RoutedEventArgs e)
     {
+        if (Interlocked.CompareExchange(ref _connectionMutationInProgress, 1, 0) != 0) return;
         try
         {
+            if (_privilegeLauncher.HasOwnedProcess(_settings.SingBoxExecutablePath, _settings.ManagedConfigPath))
+                throw new InvalidOperationException(L10n.T("请先停止当前连接。", "Stop the current connection first."));
             if (!_singBoxManager!.IsInstalled(_settings))
             {
                 var folders = await StorageProvider.OpenFolderPickerAsync(
@@ -494,6 +517,7 @@ public partial class MainWindow : Window
         finally
         {
             ProgressBar.IsVisible = false;
+            Volatile.Write(ref _connectionMutationInProgress, 0);
         }
     }
 
@@ -501,8 +525,11 @@ public partial class MainWindow : Window
         object? sender,
         RoutedEventArgs e)
     {
+        if (Interlocked.CompareExchange(ref _connectionMutationInProgress, 1, 0) != 0) return;
         try
         {
+            if (_privilegeLauncher.HasOwnedProcess(_settings.SingBoxExecutablePath, _settings.ManagedConfigPath))
+                throw new InvalidOperationException(L10n.T("请先停止当前连接。", "Stop the current connection first."));
             if (!await TestVpsInternalAsync(showSuccessDialog: false)) return;
 
             var service = new VpsDeploymentService(
@@ -522,6 +549,7 @@ public partial class MainWindow : Window
                 L10n.T("VPS 部署失败：", "VPS deployment failed: ")
                 + ex.Message);
         }
+        finally { Volatile.Write(ref _connectionMutationInProgress, 0); }
     }
 
     private async void Connect_Click(
@@ -532,6 +560,7 @@ public partial class MainWindow : Window
     private async Task<bool> ConnectInternalAsync(
         bool showResultDialog = true)
     {
+        if (Interlocked.CompareExchange(ref _connectionMutationInProgress, 1, 0) != 0) return false;
         try
         {
             _profile ??= await _settingsStore.LoadVpsProfileAsync(
@@ -543,6 +572,7 @@ public partial class MainWindow : Window
             await _singBoxManager!.ConnectAsync(
                 _settings,
                 _profile);
+            await _settingsStore.SaveAsync(_settings);
 
             var connected = await WaitForManagedConnectionAsync(
                 TimeSpan.FromSeconds(30));
@@ -576,6 +606,7 @@ public partial class MainWindow : Window
             }
             return false;
         }
+        finally { Volatile.Write(ref _connectionMutationInProgress, 0); }
     }
 
     private async Task<bool> WaitForManagedConnectionAsync(TimeSpan timeout)
@@ -586,7 +617,7 @@ public partial class MainWindow : Window
             if (_singBoxManager!.IsRunning(_settings))
             {
                 var probe =
-                    await _networkProbe.ProbeManagedConnectionAsync();
+                    await _networkProbe.ProbeManagedConnectionAsync(localProxyPort: _settings.LocalProxyPort);
                 if (probe.Connected)
                 {
                     ConnectionText.Text = L10n.T("已连接", "Connected");
@@ -613,6 +644,7 @@ public partial class MainWindow : Window
 
     private async Task AutoConnectAfterReadinessAsync()
     {
+        if (Volatile.Read(ref _connectionMutationInProgress) != 0) return;
         if (Interlocked.Exchange(ref _autoConnectInProgress, 1) == 1)
             return;
 
@@ -636,7 +668,7 @@ public partial class MainWindow : Window
                 if (_singBoxManager.IsRunning(_settings))
                 {
                     var existing =
-                        await _networkProbe.ProbeManagedConnectionAsync();
+                        await _networkProbe.ProbeManagedConnectionAsync(localProxyPort: _settings.LocalProxyPort);
                     if (existing.Connected)
                     {
                         await MarkConnectionSucceededAsync();
@@ -655,10 +687,10 @@ public partial class MainWindow : Window
                     && !string.IsNullOrWhiteSpace(
                         _networkProbe.DetectLocalDns());
                 var vpsReady = networkReady
-                    && await _networkProbe.IsTcpPortOpenAsync(
+                    && (_profile.Transport == "hysteria2" || await _networkProbe.IsTcpPortOpenAsync(
                         _profile.ServerIp,
                         _profile.ServerPort,
-                        TimeSpan.FromSeconds(2));
+                        TimeSpan.FromSeconds(3)));
 
                 if (vpsReady)
                 {
@@ -747,9 +779,79 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void Transport_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingPreferences || !_initialized) return;
+        if (Volatile.Read(ref _connectionMutationInProgress) != 0)
+        {
+            _loadingPreferences = true;
+            try { TransportBox.SelectedIndex = _settings.PreferredTransport == "vless" ? 1 : 0; }
+            finally { _loadingPreferences = false; }
+            return;
+        }
+        try
+        {
+            _settings.PreferredTransport = (TransportBox.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "hysteria2";
+            await _settingsStore.SaveAsync(_settings);
+        }
+        catch (Exception ex) { await ShowErrorAsync(L10n.T("设置保存失败：", "Could not save settings: ") + ex.Message); }
+    }
+
+    private async void ImportProfile_Click(object? sender, RoutedEventArgs e)
+    {
+        if (Interlocked.CompareExchange(ref _connectionMutationInProgress, 1, 0) != 0) return;
+        try
+        {
+            if (_privilegeLauncher.HasOwnedProcess(_settings.SingBoxExecutablePath, _settings.ManagedConfigPath))
+            {
+                await ShowInfoAsync(L10n.T("请先停止当前连接，再导入配置。", "Stop the current connection before importing a profile."));
+                return;
+            }
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = L10n.T("导入连接配置", "Import connection profile"),
+                AllowMultiple = false,
+                FileTypeFilter = [new FilePickerFileType("JSON") { Patterns = ["*.json"] }]
+            });
+            var file = files.FirstOrDefault();
+            if (file is null) return;
+            await using var input = await file.OpenReadAsync();
+            var profile = await new ProfileImportService().ReadAsync(input);
+            if (_privilegeLauncher.HasOwnedProcess(_settings.SingBoxExecutablePath, _settings.ManagedConfigPath))
+                throw new InvalidOperationException(L10n.T("请先停止当前连接，再导入配置。", "Stop the current connection before importing a profile."));
+            await _settingsStore.SaveVpsProfileAsync(profile, _settings.VpsProfilePath);
+            _profile = profile;
+            _settings.VpsHost = profile.ServerIp;
+            _settings.PreferredTransport = profile.Transport;
+            _settings.HasSuccessfulConnection = false;
+            _settings.AutoConnect = false;
+            VpsHostBox.Text = profile.ServerIp;
+            _loadingPreferences = true;
+            try
+            {
+                TransportBox.SelectedIndex = profile.Transport == "hysteria2" ? 0 : 1;
+                AutoConnectCheckBox.IsChecked = false;
+            }
+            finally { _loadingPreferences = false; }
+            await _settingsStore.SaveAsync(_settings);
+            await RefreshStateAsync();
+            await ShowSuccessAsync(L10n.T("连接配置已导入。", "Connection profile imported."));
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorAsync(L10n.T("导入失败：", "Import failed: ") + ex.Message);
+        }
+        finally { Volatile.Write(ref _connectionMutationInProgress, 0); }
+    }
+
     private async void ExportMobileProfile_Click(
         object? sender,
-        RoutedEventArgs e)
+        RoutedEventArgs e) => await ExportProfileAsync(thirdParty: false);
+
+    private async void ExportIosProfile_Click(object? sender, RoutedEventArgs e) =>
+        await ExportProfileAsync(thirdParty: true);
+
+    private async Task ExportProfileAsync(bool thirdParty)
     {
         try
         {
@@ -763,14 +865,16 @@ public partial class MainWindow : Window
                 return;
             }
 
-            var json = new MobileProfileExportService().Serialize(_profile);
+            var json = thirdParty
+                ? new ThirdPartyProfileExportService().Serialize(_profile)
+                : new MobileProfileExportService().Serialize(_profile);
             var file = await StorageProvider.SaveFilePickerAsync(
                 new FilePickerSaveOptions
                 {
-                    Title = L10n.T(
+                    Title = thirdParty ? L10n.T("导出 iOS 配置", "Export iOS profile") : L10n.T(
                         "导出手机配置（含连接凭据，请妥善保管）",
                         "Export mobile profile (contains connection credentials; keep it private)"),
-                    SuggestedFileName = "s2n-mobile-profile.json",
+                    SuggestedFileName = thirdParty ? "s2n-ios-profile.json" : "s2n-mobile-profile.json",
                     DefaultExtension = "json",
                     ShowOverwritePrompt = true,
                     FileTypeChoices =
@@ -795,14 +899,16 @@ public partial class MainWindow : Window
                 await output.FlushAsync();
             }
 
-            await ShowSuccessAsync(L10n.T(
+            await ShowSuccessAsync(thirdParty ? L10n.T(
+                "iOS 配置已导出，请按 iOS 连接指南导入客户端。",
+                "iOS profile exported. Follow the iOS guide to import it into your client.") : L10n.T(
                 "手机配置已导出，请在 Android 版 S2N 中导入，并妥善保管该文件。",
                 "Mobile profile exported. Import it into S2N for Android and keep the file private."));
         }
         catch (Exception ex)
         {
             await ShowErrorAsync(L10n.T(
-                "手机配置导出失败：", "Mobile profile export failed: ") + ex.Message);
+                "配置导出失败：", "Profile export failed: ") + ex.Message);
         }
     }
 

@@ -43,11 +43,14 @@ public sealed class NetworkProbeService
     }
 
     public async Task<(bool Connected, string ExitInfo)> ProbeManagedConnectionAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int localProxyPort = 2080)
     {
+        if (localProxyPort is < 1024 or > 65535)
+            return (false, L10n.T("本地代理端口无效", "Invalid local proxy port"));
         var handler = new SocketsHttpHandler
         {
-            Proxy = new WebProxy("http://127.0.0.1:2080"),
+            Proxy = new WebProxy($"http://127.0.0.1:{localProxyPort}"),
             UseProxy = true,
             ConnectTimeout = ManagedConnectTimeout
         };
@@ -57,7 +60,7 @@ public sealed class NetworkProbeService
             Timeout = ManagedRequestTimeout
         };
         client.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("S2N-Connect", "0.3.0-beta.2"));
+            new ProductInfoHeaderValue("S2N-Connect", "0.4.0-beta.1"));
 
         // Google is the authoritative connectivity test requested by the UI.
         // Any successful HTTP response proves that the managed proxy path works.
@@ -141,7 +144,7 @@ public sealed class NetworkProbeService
             Timeout = TimeSpan.FromSeconds(timeoutSeconds)
         };
         client.DefaultRequestHeaders.UserAgent.Add(
-            new ProductInfoHeaderValue("S2N-Connect", "0.3.0-beta.2"));
+            new ProductInfoHeaderValue("S2N-Connect", "0.4.0-beta.1"));
         return client;
     }
 

@@ -116,7 +116,9 @@ static void RunChecks()
         Check(!exception.Message.Contains(marker, StringComparison.Ordinal), "validation errors do not expose rejected credential values");
     }
 
-    Console.WriteLine($"PASS: {passed} isolated mobile export checks (no files, network, keys, or user settings).");
+    passed += HysteriaExportChecks.Run();
+    passed += ThirdPartyExportChecks.Run();
+    Console.WriteLine($"PASS: {passed} mobile and third-party export checks. Temporary fixtures only; no network or user settings.");
 }
 
 static VpsProfile Fixture() => new()

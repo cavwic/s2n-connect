@@ -2,34 +2,28 @@
 
 # iOS 连接指南
 
-使用 [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) 等支持 VLESS + REALITY 的客户端连接已部署的 VPS。Hiddify 要求 iOS 15.0 或以上。
+使用 [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) 等第三方客户端连接 VPS；Hiddify 要求 iOS 15 或以上。
 
-1. 在桌面端完成 VPS 部署，点击“导出手机配置”。
-2. 用文本编辑器打开导出的 JSON，将下方链接中的 `{字段名}` 替换为文件内的对应值，保留其他参数。
+1. 在桌面端完成部署或导入已有连接，点击“导出 iOS 配置”。
+2. 将导出的 JSON 文件安全传到手机，复制文件的**全部内容**，在 Hiddify 中选择“＋ → 从剪贴板添加”。
+3. 选择新增的 S2N 节点，连接并允许系统 VPN 授权，再检查实际联网情况。
 
-```text
-vless://{uuid}@{serverIp}:{serverPort}?encryption=none&security=reality&type=tcp&flow=xtls-rprx-vision&fp=chrome&pbk={publicKey}&sid={shortId}&sni={serverName}#S2N
-```
+此文件为完整 sing-box 配置，支持 Hysteria 2（UDP）和原有 VLESS + REALITY（TCP），并保留自定义证书验证；默认代理公网流量，局域网直连。客户端应支持 sing-box 1.12 或更新的配置格式；若 Hiddify 提示格式不兼容，可更新客户端，或使用 [sing-box 官方 Apple 客户端](https://sing-box.sagernet.org/clients/apple/) 的本地配置导入。
 
-3. 将完整链接复制到手机，在 Hiddify 中选择“＋ → 从剪贴板添加”，选择该节点连接并允许系统 VPN 授权。
+“导出手机配置”生成的是 **S2N Android 专用格式**，请勿将其作为 Hiddify 配置导入。不要开启“跳过证书验证”。配置含连接凭据，请勿公开上传或分享。
 
-导出的 JSON 供 S2N Android 客户端使用，不能直接作为 Hiddify 配置导入。若服务器为 IPv6 地址，链接中需加方括号，如 `[2001:db8::1]`。配置文件和链接均含连接凭据，请勿公开分享。
-
-[Hiddify 官方使用说明](https://hiddify.com/app/How-to-use-Hiddify-app/) · [连接链接格式](https://github.com/hiddify/hiddify-app/wiki/URL-Scheme)
+兼容性依据：[Hiddify 配置格式](https://github.com/hiddify/hiddify-app#-main-features)、[剪贴板本地配置导入实现](https://github.com/hiddify/hiddify-app/blob/main/lib/features/profile/notifier/profile_notifier.dart#L64-L81)。已验证导出配置的原生核心检查；尚未进行 iOS 真机验证。
 
 # iOS connection guide
 
-Use [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) or another VLESS + REALITY client to connect to your deployed VPS. Hiddify requires iOS 15.0 or later.
+Use [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) or another compatible client to connect to your VPS. Hiddify requires iOS 15 or later.
 
-1. Deploy the VPS from the desktop app and click **Export mobile profile**.
-2. Open the exported JSON in a text editor. In the link below, replace each `{fieldName}` with its value from the file and leave the other parameters unchanged.
+1. Deploy your VPS or import an existing connection in the desktop app, then select **Export iOS profile**.
+2. Transfer the JSON file securely to your phone. Copy its **entire contents** and choose **＋ → Add from clipboard** in Hiddify.
+3. Select the new S2N server, connect, approve the system VPN configuration, and verify internet access.
 
-```text
-vless://{uuid}@{serverIp}:{serverPort}?encryption=none&security=reality&type=tcp&flow=xtls-rprx-vision&fp=chrome&pbk={publicKey}&sid={shortId}&sni={serverName}#S2N
-```
+The export is a complete sing-box configuration for Hysteria 2 (UDP) or legacy VLESS + REALITY (TCP). It preserves custom certificate trust, proxies public traffic, and keeps LAN traffic direct. Use a client supporting sing-box 1.12 or newer configuration syntax. If Hiddify rejects the format, update it or import the file as a local profile in the [official sing-box Apple client](https://sing-box.sagernet.org/clients/apple/).
 
-3. Copy the complete link to your phone. In Hiddify, select **＋ → Add from clipboard**, choose the profile, connect, and allow the system VPN configuration.
+**Export mobile profile** produces an **S2N Android-specific format**, which is not a Hiddify configuration. Keep certificate verification enabled. These files contain connection credentials; do not upload them publicly or share them.
 
-The exported JSON is for the S2N Android client and cannot be imported directly as a Hiddify configuration. Enclose IPv6 server addresses in square brackets, such as `[2001:db8::1]`. Profile files and links contain connection credentials; do not share them publicly.
-
-[Official Hiddify guide](https://hiddify.com/app/How-to-use-Hiddify-app/) · [Connection link format](https://github.com/hiddify/hiddify-app/wiki/URL-Scheme)
+Compatibility references: [Hiddify formats](https://github.com/hiddify/hiddify-app#-main-features), [clipboard import implementation](https://github.com/hiddify/hiddify-app/blob/main/lib/features/profile/notifier/profile_notifier.dart#L64-L81). The export passes native core configuration checks; it has not been tested on a physical iOS device.

@@ -7,5 +7,8 @@
   <ItemGroup>
     <Compile Include="../../src/S2N.App/Models/AppSettings.cs" Link="AppSettings.cs" />
     <Compile Include="../../src/S2N.App/Services/MobileProfileExportService.cs" Link="MobileProfileExportService.cs" />
+    <Compile Include="../../src/S2N.App/Services/VpsProfileValidator.cs" Link="VpsProfileValidator.cs" />
+    <Compile Include="../../src/S2N.App/Services/SingBoxOutboundBuilder.cs" Link="SingBoxOutboundBuilder.cs" />
+    <Compile Include="../../src/S2N.App/Services/ThirdPartyProfileExportService.cs" Link="ThirdPartyProfileExportService.cs" />
   </ItemGroup>
 </Project>

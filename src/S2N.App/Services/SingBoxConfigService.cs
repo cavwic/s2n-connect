@@ -11,8 +11,12 @@ public sealed class SingBoxConfigService
         AppSettings settings,
         VpsProfile profile,
         string localDns,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? interfaceName = null)
     {
+        profile = VpsProfileValidator.Normalize(profile);
+        if (settings.LocalProxyPort is < 1024 or > 65535)
+            throw new InvalidDataException(L10n.T("本地代理端口无效。", "Invalid local proxy port."));
         var exclude = new List<string>
         {
             "10.0.0.0/8",
@@ -91,14 +95,14 @@ public sealed class SingBoxConfigService
                     type = "mixed",
                     tag = "health-in",
                     listen = "127.0.0.1",
-                    listen_port = 2080,
+                    listen_port = settings.LocalProxyPort,
                     set_system_proxy = false
                 },
                 new
                 {
                     type = "tun",
                     tag = "tun-in",
-                    interface_name = "s2n-tun",
+                    interface_name = interfaceName ?? "s2n-tun",
                     address = new[] { "198.18.0.1/30" },
                     mtu = 1500,
                     auto_route = true,
@@ -109,31 +113,7 @@ public sealed class SingBoxConfigService
             },
             outbounds = new object[]
             {
-                new
-                {
-                    type = "vless",
-                    tag = "vless-out",
-                    server = profile.ServerIp,
-                    server_port = profile.ServerPort,
-                    uuid = profile.Uuid,
-                    flow = "xtls-rprx-vision",
-                    tls = new
-                    {
-                        enabled = true,
-                        server_name = profile.ServerName,
-                        utls = new
-                        {
-                            enabled = true,
-                            fingerprint = "chrome"
-                        },
-                        reality = new
-                        {
-                            enabled = true,
-                            public_key = profile.PublicKey,
-                            short_id = profile.ShortId
-                        }
-                    }
-                },
+                BuildOutbound(profile),
                 new { type = "direct", tag = "direct" }
             },
             dns = new
@@ -208,6 +188,8 @@ public sealed class SingBoxConfigService
             JsonSerializer.Serialize(config, options),
             cancellationToken);
     }
+
+    public static object BuildOutbound(VpsProfile profile) => SingBoxOutboundBuilder.Build(profile);
 
     private static string NormalizeDomain(string value)
     {

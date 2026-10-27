@@ -8,10 +8,10 @@
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <PublishTrimmed>false</PublishTrimmed>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>0.3.0-beta.2</Version>
-    <AssemblyVersion>0.3.0.0</AssemblyVersion>
-    <FileVersion>0.3.0.2</FileVersion>
-    <InformationalVersion>0.3.0-beta.2</InformationalVersion>
+    <Version>0.4.0-beta.1</Version>
+    <AssemblyVersion>0.4.0.0</AssemblyVersion>
+    <FileVersion>0.4.0.1</FileVersion>
+    <InformationalVersion>0.4.0-beta.1</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,5 +24,6 @@
 
   <ItemGroup>
     <AvaloniaResource Include="Assets/**" />
+    <EmbeddedResource Include="Server/*.py" />
   </ItemGroup>
 </Project>

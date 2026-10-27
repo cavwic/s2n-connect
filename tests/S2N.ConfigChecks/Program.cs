@@ -57,6 +57,24 @@ static async Task RunChecksAsync()
     Check(settings.AutoConnect && settings.HasSuccessfulConnection, "auto-connect persists after explicit successful connection");
     Check(settings.ThemeMode == "system", "unknown theme falls back to system");
     Check(!File.Exists(AppPaths.SettingsPath + ".tmp"), "settings save finishes atomic temporary-file replacement");
+    await Task.WhenAll(Enumerable.Range(0, 24).Select(index => new SettingsStore().SaveAsync(new AppSettings
+    {
+        VpsHost = $"settings-{index}.example.invalid", ThemeMode = index % 2 == 0 ? "dark" : "light"
+    })));
+    var concurrent = await store.LoadAsync();
+    Check(concurrent.VpsHost.StartsWith("settings-", StringComparison.Ordinal)
+        && concurrent.ThemeMode is "dark" or "light", "concurrent UI setting saves produce a complete readable file");
+    Check(!Directory.EnumerateFiles(AppPaths.DataDirectory, "*.tmp").Any(), "concurrent settings saves clean up all temporary files");
+    var savedSettings = await File.ReadAllBytesAsync(AppPaths.SettingsPath);
+    using (var canceledSettings = new CancellationTokenSource())
+    {
+        canceledSettings.Cancel();
+        var canceled = false;
+        try { await store.SaveAsync(new AppSettings(), canceledSettings.Token); }
+        catch (OperationCanceledException) { canceled = true; }
+        var afterCanceledSettings = await File.ReadAllBytesAsync(AppPaths.SettingsPath);
+        Check(canceled && savedSettings.SequenceEqual(afterCanceledSettings), "canceling a settings save retains the previous settings file");
+    }
     Check(await store.LoadVpsProfileAsync(Path.Combine(AppPaths.DataDirectory, "missing-profile.json")) is null, "missing VPS profile is handled");
 
     var profile = new VpsProfile
@@ -156,5 +174,6 @@ static async Task RunChecksAsync()
     try { await configService.WriteAsync(settings, profile, "192.168.1.1"); }
     catch (InvalidDataException) { invalidDomainRejected = true; }
     Check(invalidDomainRejected, "invalid domain rule is rejected");
+    passed += await HysteriaChecks.RunAsync();
     Console.WriteLine($"PASS: {passed} configuration and settings assertions. Temporary storage only; no network or system changes.");
 }

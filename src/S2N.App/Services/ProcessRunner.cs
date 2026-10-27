@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Text;
 using S2N.Localization;
 
 namespace S2N.Services;
@@ -26,32 +25,31 @@ public static class ProcessRunner
             start.ArgumentList.Add(argument);
 
         using var process = new Process { StartInfo = start };
-        var stdout = new StringBuilder();
-        var stderr = new StringBuilder();
-
-        process.OutputDataReceived += (_, e) =>
-        {
-            if (e.Data is not null) stdout.AppendLine(e.Data);
-        };
-        process.ErrorDataReceived += (_, e) =>
-        {
-            if (e.Data is not null) stderr.AppendLine(e.Data);
-        };
-
+        cancellationToken.ThrowIfCancellationRequested();
         if (!process.Start())
             throw new InvalidOperationException(
                 L10n.T(
                     $"无法启动 {fileName}。",
                     $"Failed to start {fileName}."));
 
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        await process.WaitForExitAsync(cancellationToken);
+        var stdout = process.StandardOutput.ReadToEndAsync();
+        var stderr = process.StandardError.ReadToEndAsync();
+        try { await process.WaitForExitAsync(cancellationToken); }
+        catch
+        {
+            // Cancellation must not leave a configuration check or pkexec helper
+            // running after its owner has gone away.
+            try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+            catch (InvalidOperationException) { }
+            await process.WaitForExitAsync(CancellationToken.None);
+            await Task.WhenAll(stdout, stderr);
+            throw;
+        }
 
         return new ProcessResult(
             process.ExitCode,
-            stdout.ToString(),
-            stderr.ToString());
+            await stdout,
+            await stderr);
     }
 }
 

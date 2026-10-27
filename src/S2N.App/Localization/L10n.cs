@@ -66,6 +66,8 @@ public static class L10n
                         TranslateStatic(textBox.PlaceholderText);
                     break;
             }
+            if (item is Control control && ToolTip.GetTip(control) is string tip)
+                ToolTip.SetTip(control, TranslateStatic(tip));
         }
     }
 
@@ -110,6 +112,14 @@ public static class L10n
                     "Select an installation directory",
                 ["选择并安装"] = "Select and install",
                 ["部署操作"] = "Deployment actions",
+                ["部署协议"] = "Deployment protocol",
+                ["UDP 443（Hysteria 2）"] = "UDP 443 (Hysteria 2)",
+                ["TCP 443（VLESS + REALITY）"] = "TCP 443 (VLESS + REALITY)",
+                ["SSH 代理端口"] = "SSH proxy port",
+                ["0 表示直连；SSH 无法直连时，可填写本机 HTTP 代理端口。"] =
+                    "Use 0 for a direct connection, or enter a local HTTP proxy port if direct SSH is unavailable.",
+                ["导入连接配置"] = "Import profile",
+                ["导出 iOS 配置"] = "Export iOS profile",
                 ["一键部署"] = "One-click deploy",
                 ["仅部署 VPS"] = "Deploy VPS only",
                 ["偏好设置"] = "Preferences",

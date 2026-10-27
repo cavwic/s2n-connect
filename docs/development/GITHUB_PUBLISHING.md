@@ -71,7 +71,7 @@ Windows Authenticode and macOS Developer ID/notarization are separate work. See
 
 1. Set the same version in the desktop project, Android `versionName`, and the
    first CHANGELOG section. Increase Android `versionCode` for every distributed
-   update. For this release, use `0.3.0-beta.2` and tag `v0.3.0-beta.2`.
+   update. For this release, use `0.4.0-beta.1` and tag `v0.4.0-beta.1`.
 2. Push main and wait for desktop regression checks, all six desktop builds, the
    Android build, and emulator smoke tests to pass. Review both CodeQL results.
 3. Confirm the Android signing secrets and private key backup are available.
@@ -85,7 +85,7 @@ Windows Authenticode and macOS Developer ID/notarization are separate work. See
 The complete release has **15 assets**:
 
 - Six desktop archives and six individual `.sha256` files.
-- `S2N-v0.3.0-beta.2-android-universal.apk` and its `.sha256` file.
+- `S2N-v0.4.0-beta.1-android-universal.apk` and its `.sha256` file.
 - `SHA256SUMS.txt` covering all seven packages.
 
 Beta status remains in the version tag and release name. Releases use GitHub's

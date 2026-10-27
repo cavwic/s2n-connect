@@ -33,17 +33,25 @@ class VpnSmokeTests {
         assertTrue(S2NVpnService.coreVersion(context).startsWith("1.14.3"))
         S2NVpnService.checkConfig(context, ConfigBuilder.build(example, false, emptyList()))
         S2NVpnService.checkConfig(context, ConfigBuilder.build(example, true, listOf("example.com")))
+        val udp = example.copy(uuid = "", publicKey = "", shortId = "", transport = "hysteria2",
+            password = "SYNTHETIC_UDP_SMOKE", serverName = "s2n-test.example.invalid")
+        S2NVpnService.checkConfig(context, ConfigBuilder.build(udp, false, emptyList()))
+        val certificate = instrumentation.context.assets.open("hysteria-test-certificate.txt")
+            .bufferedReader(Charsets.US_ASCII).use { it.readText() }
+        S2NVpnService.checkConfig(context, ConfigBuilder.build(udp.copy(certificatePem = certificate), true, listOf("example.com")))
     }
 
     @Test fun languageThemeAndProfileImportScreens() {
         context.getSharedPreferences("ui", 0).edit().clear().commit()
+        SecureStore(context).clear()
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             instrumentation.waitForIdleSync()
             dismissPixelLauncherAnr()
             screenshot("01-chinese-system.png")
             scenario.onActivity { activity ->
                 assertEquals("S2N Connect", activity.title)
-                activity.findViewById<android.widget.EditText>(R.id.profile_import).setText(example.toJson().toString())
+                val udp = example.copy(uuid = "", publicKey = "", shortId = "", transport = "hysteria2", password = "SYNTHETIC_UI_PASSWORD")
+                activity.findViewById<android.widget.EditText>(R.id.profile_import).setText(udp.toJson().toString())
                 activity.findViewById<android.widget.Button>(R.id.import_button).performClick()
                 assertTrue(activity.findViewById<android.widget.EditText>(R.id.profile_import).text.isEmpty())
                 activity.findViewById<android.widget.Button>(R.id.language_button).performClick()
@@ -51,6 +59,9 @@ class VpnSmokeTests {
             instrumentation.waitForIdleSync()
             scenario.onActivity { activity ->
                 assertEquals("Connect VPN", activity.findViewById<android.widget.Button>(R.id.connect_button).text.toString())
+                val saved = SecureStore(activity).load()!!.getJSONObject("profile")
+                assertEquals("hysteria2", saved.getString("transport"))
+                assertEquals("SYNTHETIC_UI_PASSWORD", Profile.parse(saved.toString()).password)
                 activity.findViewById<android.widget.Button>(R.id.theme_button).performClick()
             }
             val dark = waitForUiTarget(By.text("Dark"), 5000)

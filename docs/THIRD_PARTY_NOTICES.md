@@ -18,6 +18,7 @@ SSH.NET, and SharpCompress under their respective upstream licenses:
 - [SharpCompress](https://github.com/adamhathcock/sharpcompress): MIT.
 - [Xray-core](https://github.com/XTLS/Xray-core): MPL-2.0.
 - [sing-box](https://github.com/SagerNet/sing-box): GPL-3.0-or-later.
+- [Hysteria 2](https://github.com/HyNetworks/hysteria/tree/app/v2.13.0): MIT. UDP deployment downloads the official version 2.13.0 server binary and verifies its pinned SHA-256 before installation; the desktop packages do not bundle it.
 
 ## Android app and bundled core
 

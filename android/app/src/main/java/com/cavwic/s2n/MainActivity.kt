@@ -41,6 +41,10 @@ class MainActivity : Activity() {
     private lateinit var key: EditText
     private lateinit var shortId: EditText
     private lateinit var sni: EditText
+    private lateinit var transportLabel: TextView
+    private lateinit var password: EditText
+    private var currentTransport = "vless"
+    private var currentCertificate = ""
     private lateinit var domainRules: EditText
     private lateinit var global: Switch
     private var pendingConfig: String? = null
@@ -113,11 +117,11 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(dp(54), dp(52)))
         layout.addView(header)
         label(t("为 VPS 增加 VPN 功能", "Add VPN functionality to your VPS"), 18f)
-        label("${BuildConfig.VERSION_NAME} · Android 8+ · VLESS + REALITY", 14f)
+        label("Android 8+ · Hysteria 2 / VLESS + REALITY", 14f)
         status = label("", 19f).apply { id = R.id.status_text }
         label(t("导入配置", "Import profile"), 21f)
-        label(t("在桌面端部署 VPS 后导出手机配置，或粘贴 VLESS + REALITY 链接。", "Export a mobile profile after VPS deployment on desktop, or paste a VLESS + REALITY link."))
-        paste = field(t("粘贴 JSON 或 vless:// 链接", "Paste JSON or vless:// link"), "", true).apply {
+        label(t("导入桌面端导出的手机配置，或粘贴连接链接。", "Import a mobile profile exported from desktop, or paste a connection link."))
+        paste = field(t("粘贴 JSON、hysteria2:// 或 vless:// 链接", "Paste JSON, hysteria2:// or vless:// link"), "", true).apply {
             id = R.id.profile_import; maxLines = 5
         }
         button(t("导入粘贴内容", "Import pasted content"), R.id.import_button) { importText(paste.text.toString()) }
@@ -127,12 +131,17 @@ class MainActivity : Activity() {
             }, REQUEST_FILE)
         }
         label(t("连接参数", "Connection parameters"), 21f)
+        transportLabel = label("VLESS + REALITY", 17f)
         server = field(t("VPS 地址", "VPS address"))
         port = field(t("端口", "Port"), "443").apply { inputType = InputType.TYPE_CLASS_NUMBER }
         uuid = field("UUID")
         key = field(t("REALITY 公钥", "REALITY public key"))
         shortId = field("Short ID")
         sni = field("SNI")
+        password = field(t("连接密码", "Connection password")).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            visibility = View.GONE
+        }
         global = Switch(this).apply {
             text = t("全局代理（关闭后按域名规则）", "Global proxy (off: domain rules)")
             textSize = 17f; minimumHeight = dp(64)
@@ -184,9 +193,16 @@ class MainActivity : Activity() {
     private fun fill(profile: Profile) {
         server.setText(profile.serverIp); port.setText(profile.serverPort.toString()); uuid.setText(profile.uuid)
         key.setText(profile.publicKey); shortId.setText(profile.shortId); sni.setText(profile.serverName)
+        currentTransport = profile.transport; currentCertificate = profile.certificatePem
+        password.setText(profile.password)
+        val udp = currentTransport == "hysteria2"
+        transportLabel.text = if (udp) "Hysteria 2 · UDP" else "VLESS + REALITY · TCP"
+        password.visibility = if (udp) View.VISIBLE else View.GONE
+        listOf(uuid, key, shortId).forEach { it.visibility = if (udp) View.GONE else View.VISIBLE }
     }
     private fun profile() = Profile(server.text.toString().trim(), port.text.toString().toIntOrNull() ?: 0,
-        uuid.text.toString().trim(), key.text.toString().trim(), shortId.text.toString().trim(), sni.text.toString().trim()).validate()
+        uuid.text.toString().trim(), key.text.toString().trim(), shortId.text.toString().trim(), sni.text.toString().trim(),
+        currentTransport, password.text.toString(), currentCertificate).validate()
     private fun persist(): Profile {
         val profile = profile()
         ConfigBuilder.domains(domainRules.text.toString())
@@ -199,7 +215,7 @@ class MainActivity : Activity() {
             fill(it); paste.text.clear(); show(t("已导入，请保存或连接。", "Imported. Save or connect to continue."))
         }, { invalid() })
     }
-    private fun invalid() = show(t("配置无效，请检查地址、端口、UUID、公钥、Short ID、SNI 和域名规则。", "Invalid profile. Check address, port, UUID, public key, Short ID, SNI and domain rules."))
+    private fun invalid() = show(t("配置无效，请检查服务器、认证信息、证书和域名规则。", "Invalid profile. Check the server, credentials, certificate and domain rules."))
     private fun show(text: String) { Toast.makeText(this, text, Toast.LENGTH_LONG).show() }
     private fun prepareVpn() {
         val config = runCatching { ConfigBuilder.build(persist(), global.isChecked, ConfigBuilder.domains(domainRules.text.toString())) }

@@ -20,7 +20,7 @@ Expected signing certificate SHA-256:
 Verify with Android SDK Build Tools:
 
 ```sh
-apksigner verify --verbose --print-certs S2N-v0.3.0-beta.2-android-universal.apk
+apksigner verify --verbose --print-certs S2N-v0.4.0-beta.1-android-universal.apk
 ```
 
 Compare the certificate digest above and the APK hash in `SHA256SUMS.txt`. The

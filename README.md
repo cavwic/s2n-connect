@@ -27,20 +27,22 @@ S2N Connect 用于在自有 VPS 上部署 VPN 服务，提供桌面端与 Androi
 
 ## 核心功能
 
-- 一键部署 VPS 端 VPN 服务。
+- 一键部署 UDP 443 服务，兼容原 TCP 443 连接。
 - 支持规则分流与全局模式。
 - 支持添加手机连接。
 
 ## 使用指南
 
-**准备：** Ubuntu / Debian VPS、root SSH 私钥，并在服务器和云防火墙中放行 TCP 443。已有服务请先备份配置。
+**准备：** Ubuntu / Debian VPS、root SSH 私钥，以及可用的 SSH 端口（默认 22）。在服务器和云防火墙中放行 UDP 443；使用 TCP 模式时放行 TCP 443。
 
 **电脑：**
 
 1. 从上表下载对应系统和架构的包，完整解压后运行 `S2N.exe`（Windows）或 `S2N`（macOS / Linux）。
 2. 填写 VPS 地址、SSH 端口和 root 用户，选择私钥；点击“测试 VPS”并核对服务器指纹。
-3. 点击“一键部署”，选择本地安装目录，等待完成。
+3. 默认使用 UDP 443（Hysteria 2），点击“一键部署”，选择本地安装目录，等待完成。
 4. 按需设置“规则管理”或全局模式，点击“连接”并允许管理员授权；点击“停止”断开。
+
+已有节点可通过“导入连接配置”复用，无需重新部署。SSH 无法直连时，可填写现有本机 HTTP 代理端口。
 
 **安卓（Android 8.0+，ARM64 / x86_64）：**
 
@@ -50,7 +52,7 @@ S2N Connect 用于在自有 VPS 上部署 VPN 服务，提供桌面端与 Androi
 
 **iOS：**
 
-安装 [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) 等支持 VLESS + REALITY 的客户端，按 [iOS 连接指南](docs/ios.md)导入连接链接，允许 VPN 授权后连接。
+安装 [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) 等客户端，按 [iOS 连接指南](docs/ios.md)导入 iOS 配置，允许 VPN 授权后连接。
 
 配置文件含连接凭据，请勿公开分享。
 
@@ -81,20 +83,22 @@ S2N Connect deploys a VPN service on your own VPS, provides desktop and Android 
 
 ## Key features
 
-- Deploy the VPS VPN service in one step.
+- Deploy UDP 443 with Hysteria 2, or keep using TCP 443 with VLESS + REALITY.
 - Use rule-based routing or global mode.
 - Add mobile connections.
 
 ## Usage
 
-**Prepare:** An Ubuntu / Debian VPS, a root SSH private key, and TCP 443 allowed through the server and cloud firewalls. Back up existing service configurations before deployment.
+**Prepare:** An Ubuntu / Debian VPS, a root SSH private key, and working SSH access (port 22 by default). Allow UDP 443 through the server and cloud firewalls, or TCP 443 if you select the TCP protocol.
 
 **Desktop:**
 
 1. Download your system and architecture's package from the table above, extract it fully, and run `S2N.exe` (Windows) or `S2N` (macOS / Linux).
 2. Enter the VPS address, SSH port, and root user, then select your private key. Click **Test VPS** and verify the server fingerprint.
-3. Click **One-click deploy**, choose a local installation directory, and wait for completion.
+3. Leave UDP 443 (Hysteria 2) selected, click **One-click deploy**, choose a local installation directory, and wait for completion.
 4. Set **Rules** or global mode as needed. Click **Connect** and grant administrator access; click **Stop** to disconnect.
+
+Use **Import profile** to reuse an existing server without redeploying it. If direct SSH is unavailable, enter the port of an existing local HTTP proxy.
 
 **Android (8.0+, ARM64 / x86_64):**
 
@@ -104,7 +108,7 @@ S2N Connect deploys a VPN service on your own VPS, provides desktop and Android 
 
 **iOS:**
 
-Install [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) or another VLESS + REALITY client. Follow the [iOS connection guide](docs/ios.md#ios-connection-guide) to import your connection link, allow VPN configuration, and connect.
+Install [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) or another compatible client. Follow the [iOS connection guide](docs/ios.md#ios-connection-guide) to import the iOS configuration, allow VPN access, and connect.
 
 Profile files contain connection credentials. Do not share them publicly.
 

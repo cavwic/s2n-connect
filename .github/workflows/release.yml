@@ -52,6 +52,16 @@ jobs:
         run: dotnet run --project tests/S2N.ReleaseChecks/S2N.ReleaseChecks.csproj --configuration Release
       - name: Check mobile profile export
         run: dotnet run --project tests/S2N.MobileExportChecks/S2N.MobileExportChecks.csproj --configuration Release
+      - name: Check safe connection profile imports
+        run: dotnet run --project tests/S2N.ProfileImportChecks/S2N.ProfileImportChecks.csproj --configuration Release
+      - name: Check TUN ownership and startup lifecycle
+        run: dotnet run --project tests/S2N.TunChecks/S2N.TunChecks.csproj --configuration Release
+      - name: Check VPS deployment safety
+        run: dotnet run --project tests/S2N.DeploymentChecks/S2N.DeploymentChecks.csproj --configuration Release
+      - name: Check isolated server deployment and rollback
+        run: python3 -m unittest discover -s tests/S2N.DeploymentChecks -p 'test_*.py' -v
+      - name: Verify real local QUIC transport and TLS rejection
+        run: python3 scripts/test-hysteria-loopback.py
 
   android:
     name: Package and test Android
@@ -117,6 +127,29 @@ jobs:
         shell: pwsh
         run: |
           ./scripts/copy-release-docs.ps1 -OutputPath "artifacts/${{ matrix.rid }}"
+
+      - name: Fetch verified core for Windows TUN checks
+        if: matrix.rid == 'win-x64'
+        run: python scripts/fetch-test-core.py --output artifacts/native-core
+      - name: Verify three real Windows TUN first starts and cancellation
+        if: matrix.rid == 'win-x64'
+        run: dotnet run --project tests/S2N.TunChecks/S2N.TunChecks.csproj --configuration Release -- --native-windows artifacts/native-core/sing-box.exe artifacts/native-tun
+      - name: Validate generated desktop and iOS JSON with the verified core
+        if: matrix.rid == 'win-x64'
+        env:
+          S2N_CONFIGCHECK_CORE: ${{ github.workspace }}/artifacts/native-core/sing-box.exe
+        run: |
+          dotnet run --project tests/S2N.ConfigChecks/S2N.ConfigChecks.csproj --configuration Release
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet run --project tests/S2N.MobileExportChecks/S2N.MobileExportChecks.csproj --configuration Release
+      - name: Preserve Windows TUN evidence
+        if: always() && matrix.rid == 'win-x64'
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-tun-release-win-x64
+          path: artifacts/native-tun
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Archive and checksum on Windows
         if: matrix.archive == 'zip'
@@ -236,6 +269,16 @@ jobs:
               release = (await github.rest.repos.getReleaseByTag({ ...context.repo, tag })).data;
             } catch (error) {
               if (error.status !== 404) throw error;
+            }
+            // The tag endpoint only returns published releases. Find an existing
+            // draft explicitly so a failed upload can be resumed safely.
+            if (!release) {
+              const releases = await github.paginate(github.rest.repos.listReleases, {
+                ...context.repo, per_page: 100
+              });
+              const drafts = releases.filter(item => item.tag_name === tag && item.draft);
+              if (drafts.length > 1) throw new Error(`More than one draft exists for ${tag}.`);
+              release = drafts[0];
             }
             if (release && !release.draft) {
               throw new Error(`Release ${tag} is already published. Published assets are not replaced; use a new version tag.`);
