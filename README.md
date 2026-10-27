@@ -15,10 +15,10 @@
 
 | 系统 | 直接下载 |
 | --- | --- |
-| Windows | [常见电脑（x64）](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-win-arm64.zip) |
-| macOS | [Apple 芯片（M 系列）](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-osx-arm64.tar.gz) · [Intel 芯片](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-osx-x64.tar.gz) |
-| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-linux-arm64.tar.gz) |
-| 安卓 8.0+ | [下载 APK（ARM64 / x86_64）](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-android-universal.apk) |
+| Windows | [常见电脑（x64）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-arm64.zip) |
+| macOS | [Apple 芯片（M 系列）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-arm64.tar.gz) · [Intel 芯片](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-x64.tar.gz) |
+| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-arm64.tar.gz) |
+| 安卓 8.0+ | [下载 APK（ARM64 / x86_64）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-android-universal.apk) |
 | iOS | [Hiddify（第三方客户端）](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) · [连接指南](docs/ios.md) |
 
 ## 项目简介
@@ -42,7 +42,7 @@ S2N Connect 用于在自有 VPS 上部署 VPN 服务，提供桌面端与 Androi
 3. 默认使用 UDP 443（Hysteria 2），点击“一键部署”，选择本地安装目录，等待完成。
 4. 按需设置“规则管理”或全局模式，点击“连接”并允许管理员授权；点击“停止”断开。
 
-已有节点可通过“导入连接配置”复用，无需重新部署。SSH 无法直连时，可填写现有本机 HTTP 代理端口。
+升级前先在旧版停止连接。已有节点可通过“导入连接配置”复用，无需重新部署。SSH 无法直连时，可填写现有本机 HTTP 代理端口。
 
 **安卓（Android 8.0+，ARM64 / x86_64）：**
 
@@ -71,10 +71,10 @@ Service closures, peak-hour congestion, traffic limits, and privacy concerns can
 
 | Platform | Direct download |
 | --- | --- |
-| Windows | [Most PCs (x64)](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-win-arm64.zip) |
-| macOS | [Apple silicon (M series)](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-osx-arm64.tar.gz) · [Intel](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-osx-x64.tar.gz) |
-| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-linux-arm64.tar.gz) |
-| Android 8.0+ | [Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/v0.3.0-beta.2/S2N-v0.3.0-beta.2-android-universal.apk) |
+| Windows | [Most PCs (x64)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-win-arm64.zip) |
+| macOS | [Apple silicon (M series)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-arm64.tar.gz) · [Intel](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-osx-x64.tar.gz) |
+| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-linux-arm64.tar.gz) |
+| Android 8.0+ | [Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.1/S2N-v0.4.0-beta.1-android-universal.apk) |
 | iOS | [Hiddify (third-party client)](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) · [Connection guide](docs/ios.md#ios-connection-guide) |
 
 ## Overview
@@ -98,7 +98,7 @@ S2N Connect deploys a VPN service on your own VPS, provides desktop and Android 
 3. Leave UDP 443 (Hysteria 2) selected, click **One-click deploy**, choose a local installation directory, and wait for completion.
 4. Set **Rules** or global mode as needed. Click **Connect** and grant administrator access; click **Stop** to disconnect.
 
-Use **Import profile** to reuse an existing server without redeploying it. If direct SSH is unavailable, enter the port of an existing local HTTP proxy.
+Stop the previous version before upgrading. Use **Import profile** to reuse an existing server without redeploying it. If direct SSH is unavailable, enter the port of an existing local HTTP proxy.
 
 **Android (8.0+, ARM64 / x86_64):**
 
