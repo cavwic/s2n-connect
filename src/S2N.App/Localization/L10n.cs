@@ -124,7 +124,6 @@ public static class L10n
                 ["已有节点：安装本地核心后导入连接配置，即可连接，无需 SSH。"] =
                     "Existing server: install the local core and import a connection profile. SSH is not required to connect.",
                 ["导入连接配置"] = "Import profile",
-                ["导出 iOS 配置"] = "Export iOS profile",
                 ["一键部署"] = "One-click deploy",
                 ["仅部署 VPS"] = "Deploy VPS only",
                 ["偏好设置"] = "Preferences",

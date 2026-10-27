@@ -137,8 +137,7 @@
                     Click="Stop_Click"/>
             <Button Content="规则管理" Click="Rules_Click"/>
             <Button Content="导入连接配置" Click="ImportProfile_Click"/>
-            <Button Content="导出手机配置" Click="ExportMobileProfile_Click"/>
-            <Button Content="导出 iOS 配置" Click="ExportIosProfile_Click"/>
+            <Button x:Name="ExportMobileProfileButton" Content="导出手机配置"/>
             <Button Content="刷新状态" Click="Refresh_Click"/>
             <Button Content="退出" Click="Exit_Click"/>
           </WrapPanel>

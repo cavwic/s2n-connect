@@ -40,6 +40,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         L10n.Apply(this);
+        ConfigureMobileExportMenu();
 
         _installDiscovery = new ExistingInstallDiscoveryService(_singBoxInstaller);
 
@@ -844,6 +845,19 @@ public partial class MainWindow : Window
         finally { Volatile.Write(ref _connectionMutationInProgress, 0); }
     }
 
+    private void ConfigureMobileExportMenu()
+    {
+        // Flyout items are outside the window's logical tree; localize them here.
+        var android = new MenuItem { Header = L10n.T("Android（S2N）", "Android (S2N)") };
+        android.Click += ExportMobileProfile_Click;
+        var ios = new MenuItem { Header = L10n.T("iOS（Hiddify 等）", "iOS (Hiddify and similar clients)") };
+        ios.Click += ExportIosProfile_Click;
+        var menu = new MenuFlyout();
+        menu.Items.Add(android);
+        menu.Items.Add(ios);
+        ExportMobileProfileButton.Flyout = menu;
+    }
+
     private async void ExportMobileProfile_Click(
         object? sender,
         RoutedEventArgs e) => await ExportProfileAsync(thirdParty: false);
@@ -860,8 +874,8 @@ public partial class MainWindow : Window
             if (_profile is null)
             {
                 await ShowInfoAsync(L10n.T(
-                    "请先部署 VPS，再导出手机配置。",
-                    "Deploy the VPS before exporting a mobile profile."));
+                    "请先部署 VPS 或导入连接配置，再导出手机配置。",
+                    "Deploy the VPS or import a connection profile before exporting a mobile profile."));
                 return;
             }
 
@@ -871,9 +885,11 @@ public partial class MainWindow : Window
             var file = await StorageProvider.SaveFilePickerAsync(
                 new FilePickerSaveOptions
                 {
-                    Title = thirdParty ? L10n.T("导出 iOS 配置", "Export iOS profile") : L10n.T(
-                        "导出手机配置（含连接凭据，请妥善保管）",
-                        "Export mobile profile (contains connection credentials; keep it private)"),
+                    Title = thirdParty ? L10n.T(
+                        "导出 iOS 配置（Hiddify 等）",
+                        "Export iOS profile (Hiddify and similar clients)") : L10n.T(
+                        "导出 Android 配置（S2N）",
+                        "Export Android profile (S2N)"),
                     SuggestedFileName = thirdParty ? "s2n-ios-profile.json" : "s2n-mobile-profile.json",
                     DefaultExtension = "json",
                     ShowOverwritePrompt = true,
@@ -900,10 +916,10 @@ public partial class MainWindow : Window
             }
 
             await ShowSuccessAsync(thirdParty ? L10n.T(
-                "iOS 配置已导出，请按 iOS 连接指南导入客户端。",
-                "iOS profile exported. Follow the iOS guide to import it into your client.") : L10n.T(
-                "手机配置已导出，请在 Android 版 S2N 中导入，并妥善保管该文件。",
-                "Mobile profile exported. Import it into S2N for Android and keep the file private."));
+                "iOS 配置已导出，请在 Hiddify 等兼容客户端中导入，并妥善保管该文件。",
+                "iOS profile exported. Import it into Hiddify or another compatible client and keep the file private.") : L10n.T(
+                "Android 配置已导出，请在 Android 版 S2N 中导入，并妥善保管该文件。",
+                "Android profile exported. Import it into S2N for Android and keep the file private."));
         }
         catch (Exception ex)
         {

@@ -15,10 +15,10 @@
 
 | 系统 | 直接下载 |
 | --- | --- |
-| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-win-arm64.zip) |
-| macOS | [Apple 芯片（M 系列）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-osx-arm64.tar.gz) · [Intel 芯片](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-osx-x64.tar.gz) |
-| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-linux-arm64.tar.gz) |
-| 安卓 8.0+ | [下载 APK（ARM64 / x86_64）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-android-universal.apk) |
+| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-win-arm64.zip) |
+| macOS | [Apple 芯片（M 系列）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-osx-arm64.tar.gz) · [Intel 芯片](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-osx-x64.tar.gz) |
+| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-linux-arm64.tar.gz) |
+| 安卓 8.0+ | [下载 APK（ARM64 / x86_64）](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-android-universal.apk) |
 | iOS | [Hiddify（第三方客户端）](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) · [连接指南](docs/ios.md) |
 
 ## 项目简介
@@ -48,13 +48,13 @@ S2N Connect 用于在自有 VPS 上部署 VPN 服务，提供桌面端与 Androi
 
 **安卓（Android 8.0+，ARM64 / x86_64）：**
 
-1. 在桌面端点击“导出手机配置”，将文件传到手机。
+1. 在桌面端点击“导出手机配置”→“Android（S2N）”，将文件传到手机。
 2. 从上表下载并安装 APK，点击“选择配置文件”导入。
 3. 点击“连接 VPN”并允许 VPN 授权；可用“验证代理访问”检查联网，点击“停止 VPN”断开。
 
 **iOS：**
 
-安装 [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) 等客户端，按 [iOS 连接指南](docs/ios.md)导入 iOS 配置，允许 VPN 授权后连接。
+安装 [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) 等客户端，在桌面端选择“导出手机配置”→“iOS（Hiddify 等）”，按 [iOS 连接指南](docs/ios.md)导入，允许 VPN 授权后连接。
 
 配置文件含连接凭据，请勿公开分享。
 
@@ -73,10 +73,10 @@ Service closures, peak-hour congestion, traffic limits, and privacy concerns can
 
 | Platform | Direct download |
 | --- | --- |
-| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-win-arm64.zip) |
-| macOS | [Apple silicon (M series)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-osx-arm64.tar.gz) · [Intel](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-osx-x64.tar.gz) |
-| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-linux-arm64.tar.gz) |
-| Android 8.0+ | [Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.2/S2N-v0.4.0-beta.2-android-universal.apk) |
+| Windows | [AMD64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-win-x64.zip) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-win-arm64.zip) |
+| macOS | [Apple silicon (M series)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-osx-arm64.tar.gz) · [Intel](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-osx-x64.tar.gz) |
+| Linux | [x64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-linux-x64.tar.gz) · [ARM64](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-linux-arm64.tar.gz) |
+| Android 8.0+ | [Download APK (ARM64 / x86_64)](https://github.com/cavwic/s2n-connect/releases/download/v0.4.0-beta.3/S2N-v0.4.0-beta.3-android-universal.apk) |
 | iOS | [Hiddify (third-party client)](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) · [Connection guide](docs/ios.md#ios-connection-guide) |
 
 ## Overview
@@ -106,13 +106,13 @@ S2N Connect deploys a VPN service on your own VPS, provides desktop and Android 
 
 **Android (8.0+, ARM64 / x86_64):**
 
-1. Click **Export mobile profile** in the desktop app and transfer the file to your phone.
+1. Select **Export mobile profile** → **Android (S2N)** in the desktop app and transfer the file to your phone.
 2. Download and install the APK from the table above, then tap **Choose profile file** to import it.
 3. Tap **Connect VPN** and grant VPN permission. Use **Verify proxy access** to check connectivity and **Stop VPN** to disconnect.
 
 **iOS:**
 
-Install [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) or another compatible client. Follow the [iOS connection guide](docs/ios.md#ios-connection-guide) to import the iOS configuration, allow VPN access, and connect.
+Install [Hiddify](https://apps.apple.com/us/app/hiddify-proxy-vpn/id6596777532) or another compatible client. Select **Export mobile profile** → **iOS (Hiddify and similar clients)** in the desktop app, then follow the [iOS connection guide](docs/ios.md#ios-connection-guide) to import the file and approve VPN access.
 
 Profile files contain connection credentials. Do not share them publicly.
 

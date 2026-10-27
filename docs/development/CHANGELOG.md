@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0-beta.3
+
+### Changed
+
+- Use one mobile export menu with separate Android and iOS options, preserving each client's configuration format.
+- Update Chinese and English usage instructions to match the export menu.
+
 ## 0.4.0-beta.2
 
 ### Fixed

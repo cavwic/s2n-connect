@@ -8,10 +8,10 @@
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <PublishTrimmed>false</PublishTrimmed>
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>0.4.0-beta.2</Version>
+    <Version>0.4.0-beta.3</Version>
     <AssemblyVersion>0.4.0.0</AssemblyVersion>
-    <FileVersion>0.4.0.2</FileVersion>
-    <InformationalVersion>0.4.0-beta.2</InformationalVersion>
+    <FileVersion>0.4.0.3</FileVersion>
+    <InformationalVersion>0.4.0-beta.3</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
