@@ -82,6 +82,13 @@ public sealed class PrivilegeLauncher
         var record = ReadRecord(executablePath, configPath);
         using var previous = record is null ? null : FindOwnedProcess(record);
         if (previous is not null && record!.Ready) return;
+        if (record is not null && previous is null)
+        {
+            // A stopped core can leave an owned PnP device behind. Finish its
+            // cleanup before a reconnect can overwrite the ownership record.
+            await StopAsync(executablePath, cancellationToken, configPath);
+            record = null;
+        }
         var offset = TunLifecycle.LogLength(options.LogPath);
         if (previous is null)
         {
@@ -108,6 +115,7 @@ public sealed class PrivilegeLauncher
                 return new TunStartupSnapshot(true, listening,
                     TunLifecycle.IsInterfaceReady(options.InterfaceName));
             }, TimeSpan.FromSeconds(45), cancellationToken);
+            if (PlatformInfo.IsWindows) record = await WindowsTunAdapterCleanup.CaptureAsync(record!, cancellationToken);
             await SaveRecordAsync(record! with { Ready = true }, cancellationToken);
         }
         catch (Exception startupError)
@@ -127,6 +135,18 @@ public sealed class PrivilegeLauncher
     private async Task<OwnedCoreProcess> LaunchAsync(
         string executablePath, string configPath, CancellationToken cancellationToken)
     {
+        var interfaceName = "";
+        if (PlatformInfo.IsWindows)
+        {
+            var candidate = TunLifecycle.ReadOptions(configPath).InterfaceName;
+            if (WindowsTunAdapterCleanup.IsGeneratedName(candidate))
+            {
+                if (!string.IsNullOrWhiteSpace(WindowsTunAdapterCleanup.ActualGuid(candidate)))
+                    throw new InvalidOperationException(L10n.T(
+                        "本次网卡名称已被占用，请重新连接。", "This TUN interface name is already in use. Connect again."));
+                interfaceName = candidate;
+            }
+        }
         Process? process = null;
         if (PlatformInfo.IsWindows)
         {
@@ -197,7 +217,8 @@ public sealed class PrivilegeLauncher
         var record = new OwnedCoreProcess(process.Id,
             process.StartTime.ToUniversalTime().Ticks,
             Path.GetFullPath(executablePath), Path.GetFullPath(configPath),
-            LauncherExecutablePath: ProcessLocator.TryGetExecutablePath(process) ?? "");
+            LauncherExecutablePath: ProcessLocator.TryGetExecutablePath(process) ?? "",
+            InterfaceName: interfaceName);
         _launchHandles[process.Id] = process;
         try
         {
@@ -222,9 +243,31 @@ public sealed class PrivilegeLauncher
     {
         var record = ReadRecord(executablePath, configPath);
         if (record is null) return;
+        if (PlatformInfo.IsWindows)
+        {
+            record = await WindowsTunAdapterCleanup.CaptureAsync(record, cancellationToken);
+            await SaveRecordAsync(record, CancellationToken.None);
+        }
         using var process = FindOwnedProcess(record);
         if (process is not null)
             await StopVerifiedProcessAsync(record, cancellationToken);
+        if (!RecordedProcessExited(record))
+            throw new InvalidOperationException(L10n.T(
+                "无法确认本次 sing-box 已停止，未执行网卡清理。",
+                "This sing-box process has not been confirmed stopped; its adapter was not removed."));
+        if (PlatformInfo.IsWindows)
+        {
+            // Cancellation can happen before the adapter is ready. Capture its
+            // actual GUID after process exit too, allowing brief PnP completion.
+            for (var attempt = 0; attempt < 5 && string.IsNullOrWhiteSpace(record.InterfaceGuid)
+                 && !string.IsNullOrWhiteSpace(record.InterfaceName); attempt++)
+            {
+                record = await WindowsTunAdapterCleanup.CaptureAsync(record, CancellationToken.None);
+                if (string.IsNullOrWhiteSpace(record.InterfaceGuid)) await Task.Delay(200, CancellationToken.None);
+            }
+            await SaveRecordAsync(record, CancellationToken.None);
+            await WindowsTunAdapterCleanup.RemoveAsync(record, Path.GetDirectoryName(_pidPath)!, CancellationToken.None);
+        }
         if (_launchHandles.Remove(record.Pid, out var handle)) handle.Dispose();
         try { File.Delete(_pidPath); } catch { }
     }
@@ -378,6 +421,17 @@ public sealed class PrivilegeLauncher
         catch { }
         process?.Dispose();
         return null;
+    }
+
+    private static bool RecordedProcessExited(OwnedCoreProcess record)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(record.Pid);
+            return process.HasExited || process.StartTime.ToUniversalTime().Ticks != record.StartTimeUtcTicks;
+        }
+        catch (ArgumentException) { return true; }
+        catch { return false; }
     }
 
     private async Task SaveRecordAsync(OwnedCoreProcess record, CancellationToken cancellationToken)

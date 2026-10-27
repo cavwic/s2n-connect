@@ -29,10 +29,19 @@ internal static class NativeWindowsChecks
         var foreignPort = FreePort();
         var foreignConfig = await WriteConfigAsync(resultDirectory, "unrelated", legacyName, foreignPort, 254);
         Process? unrelated = null;
+        WindowsAdapterIdentity? unrelatedIdentity = null;
         var mainConfig = "";
         var createdNames = new List<string>();
         var completed = false;
         var reportJson = "";
+        Exception? originalFailure = null;
+        var progress = new List<object>();
+        async Task SaveProgressAsync(object item)
+        {
+            progress.Add(item);
+            await File.WriteAllTextAsync(Path.Combine(resultDirectory, "native-tun-progress.json"),
+                JsonSerializer.Serialize(progress, new JsonSerializerOptions { WriteIndented = true }));
+        }
         try
         {
             await CheckConfigAsync(executablePath, foreignConfig);
@@ -51,6 +60,9 @@ internal static class NativeWindowsChecks
                 !unrelated.HasExited,
                 await TunLifecycle.IsListenerReadyAsync(IPAddress.Loopback, foreignPort, token),
                 TunLifecycle.IsInterfaceReady(legacyName)), TimeSpan.FromSeconds(45));
+            unrelatedIdentity = await WindowsTunAdapterCleanup.CaptureLegacyFixtureAsync(legacyName);
+            await SaveProgressAsync(new { Stage = "UnrelatedFixtureReady", Interface = legacyName,
+                unrelatedIdentity.InterfaceGuid, unrelatedIdentity.PnpDeviceId, Pid = unrelated.Id });
             Require(!launcher.IsRunning(executablePath, foreignConfig), "An unrelated same-binary core was adopted.");
 
             for (var index = 0; index < 3; index++)
@@ -70,8 +82,16 @@ internal static class NativeWindowsChecks
                 Require(!unrelated.HasExited && TunLifecycle.IsInterfaceReady(legacyName), "The unrelated core or interface was disturbed.");
                 var identity = JsonSerializer.Deserialize<OwnedCoreProcess>(await File.ReadAllTextAsync(
                     Path.Combine(resultDirectory, "owned-state", "sing-box.pid")))!;
+                Require(WindowsTunAdapterCleanup.IsExpectedIdentity(name, identity.InterfaceGuid)
+                    && WindowsTunAdapterCleanup.IsWintunDeviceId(identity.PnpDeviceId),
+                    "The owned adapter's actual GUID/PnP identity was not recorded.");
+                await SaveProgressAsync(new { Stage = "FirstLaunchReady", Run = index + 1,
+                    Attempts = 1, Interface = name, identity.InterfaceGuid, identity.PnpDeviceId,
+                    identity.Pid, StartupMs = watch.ElapsedMilliseconds });
                 await launcher.StopAsync(executablePath, configPath: mainConfig);
                 await WaitForRemovalAsync(name, port, identity.Pid);
+                await SaveProgressAsync(new { Stage = "OwnedFixtureRemoved", Run = index + 1,
+                    Interface = name, identity.Pid, ProcessStopped = true, ListenerRemoved = true, AdapterRemoved = true });
                 runs.Add(new { Run = index + 1, Attempts = 1, Interface = name,
                     Port = port, Pid = identity.Pid, StartupMs = watch.ElapsedMilliseconds,
                     FirstLaunchReady = true, OwnInterfaceRemoved = true, OwnListenerRemoved = true,
@@ -102,6 +122,8 @@ internal static class NativeWindowsChecks
             catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
             Require(cancelledIdentity is not null, "The cancellation fixture never created its core process.");
             await WaitForRemovalAsync(cancelledName, cancelledPort, cancelledIdentity!.Pid);
+            await SaveProgressAsync(new { Stage = "CancellationCleanupComplete",
+                Interface = cancelledName, cancelledIdentity.Pid });
             Require(!unrelated.HasExited && TunLifecycle.IsInterfaceReady(legacyName), "Cancellation disturbed the unrelated fixture.");
             Require(createdNames.Distinct().Count() == createdNames.Count, "A previous name/GUID was reused.");
             completed = true;
@@ -118,17 +140,43 @@ internal static class NativeWindowsChecks
             };
             reportJson = JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true });
         }
+        catch (Exception exception)
+        {
+            originalFailure = exception;
+            await File.WriteAllTextAsync(Path.Combine(resultDirectory, "native-tun-failure.json"),
+                JsonSerializer.Serialize(new { Error = exception.ToString() }, new JsonSerializerOptions { WriteIndented = true }));
+            throw;
+        }
         finally
         {
-            if (!string.IsNullOrEmpty(mainConfig))
-                await launcher.StopAsync(executablePath, configPath: mainConfig);
-            if (unrelated is not null)
+            var cleanupErrors = new List<Exception>();
+            try
             {
-                if (!unrelated.HasExited) unrelated.Kill(entireProcessTree: true);
-                await unrelated.WaitForExitAsync();
-                var pid = unrelated.Id;
-                unrelated.Dispose();
-                await WaitForRemovalAsync(legacyName, foreignPort, pid);
+                if (!string.IsNullOrEmpty(mainConfig))
+                    await launcher.StopAsync(executablePath, configPath: mainConfig);
+            }
+            catch (Exception exception) { cleanupErrors.Add(exception); }
+            try
+            {
+                if (unrelated is not null)
+                {
+                    if (!unrelated.HasExited) unrelated.Kill(entireProcessTree: true);
+                    await unrelated.WaitForExitAsync();
+                    var pid = unrelated.Id;
+                    unrelated.Dispose();
+                    if (unrelatedIdentity is not null)
+                        await WindowsTunAdapterCleanup.RemoveLegacyFixtureAsync(legacyName, unrelatedIdentity, resultDirectory);
+                    await WaitForRemovalAsync(legacyName, foreignPort, pid);
+                }
+            }
+            catch (Exception exception) { cleanupErrors.Add(exception); }
+            if (cleanupErrors.Count != 0)
+            {
+                await File.WriteAllTextAsync(Path.Combine(resultDirectory, "native-tun-cleanup-failure.json"),
+                    JsonSerializer.Serialize(new { Errors = cleanupErrors.Select(x => x.ToString()).ToArray() },
+                        new JsonSerializerOptions { WriteIndented = true }));
+                if (originalFailure is null) throw new AggregateException("Native fixture cleanup failed.", cleanupErrors);
+                Console.Error.WriteLine("Additional fixture cleanup errors were preserved without replacing the original failure.");
             }
             if (completed) Console.WriteLine("Native fixture cleanup completed; no production VPN was used.");
         }

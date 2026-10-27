@@ -9,5 +9,6 @@
     <Compile Include="../../src/S2N.App/Services/ProcessRunner.cs" Link="ProcessRunner.cs" />
     <Compile Include="../../src/S2N.App/Services/PrivilegeLauncher.cs" Link="PrivilegeLauncher.cs" />
     <Compile Include="../../src/S2N.App/Services/ProcessLocator.cs" Link="ProcessLocator.cs" />
+    <Compile Include="../../src/S2N.App/Services/WindowsTunAdapterCleanup.cs" Link="WindowsTunAdapterCleanup.cs" />
   </ItemGroup>
 </Project>

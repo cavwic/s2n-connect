@@ -42,6 +42,60 @@ static async Task RunChecksAsync(string directory)
     Check(TunLifecycle.NewInterfaceName(false) is null, "Unix interface selection remains unchanged");
     Check(TunLifecycle.SelectMacInterfaceName(["utun128", "utun129", "en0"]) == "utun130",
         "macOS selects a valid available utun alias without reusing another VPN interface");
+    var guid = WindowsTunAdapterCleanup.ExpectedGuid(names[0]);
+    Check(WindowsTunAdapterCleanup.IsExpectedIdentity(names[0], guid), "adapter GUID matches the pinned sing-tun name-derived identity");
+    Check(!WindowsTunAdapterCleanup.IsExpectedIdentity(names[0], Guid.NewGuid().ToString("D")),
+        "an unrelated adapter GUID cannot pass cleanup ownership checks");
+    Check(!WindowsTunAdapterCleanup.IsGeneratedName("s2n-tun")
+        && !WindowsTunAdapterCleanup.IsGeneratedName(names[0] + "\n"),
+        "legacy aliases and trailing-newline lookalikes are not removable owned aliases");
+    Check(WindowsTunAdapterCleanup.IsWintunDeviceId(@"SWD\WINTUN\{fixture}")
+        && !WindowsTunAdapterCleanup.IsWintunDeviceId(@"ROOT\NET\{fixture}"),
+        "cleanup is limited to the Wintun software-device namespace");
+    Check(WindowsTunAdapterCleanup.MatchesPnpGuid(guid, @"SWD\WINTUN\{" + guid + "}")
+        && !WindowsTunAdapterCleanup.MatchesPnpGuid(guid, @"SWD\WINTUN\" + Guid.NewGuid().ToString("B")),
+        "captured PnP instance suffix is bound to the owned adapter GUID, including ghost cleanup");
+    var removal = WindowsTunAdapterCleanup.BuildRemovalScript(names[0], guid,
+        @"SWD\WINTUN\{fixture}", Path.Combine(directory, "result.json"));
+    Check(removal.Contains("/remove-device $result.PnpDeviceId")
+        && !removal.Contains("/force") && !removal.Contains("/subtree") && !removal.Contains("/delete-driver")
+        && removal.Contains("Get-PnpDevice -Class Net -ErrorAction Stop")
+        && removal.Contains("$_.InstanceId -ieq $result.PnpDeviceId")
+        && !removal.Contains("SilentlyContinue"),
+        "cleanup targets one captured PnP instance and checks its post-removal absence");
+    Check(removal.Contains(@"'^SWD\\WINTUN\\'"), "PowerShell device-prefix regex keeps its literal backslashes");
+    if (OperatingSystem.IsWindows())
+    {
+        var powerShell = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe");
+        async Task<ProcessResult> RunPowerShellFixture(string script) =>
+            await ProcessRunner.RunAsync(powerShell, ["-NoProfile", "-NonInteractive", "-EncodedCommand",
+                Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(script))]);
+        var adapter = new { GUID = guid, NetConnectionID = names[0], PNPDeviceID = @"SWD\WINTUN\{" + guid + "}" };
+        var fixtureData = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(adapter)));
+        var fakeProvider = "function Get-CimInstance { [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('"
+            + fixtureData + "'))|ConvertFrom-Json };";
+        var identityResult = await RunPowerShellFixture(fakeProvider
+            + WindowsTunAdapterCleanup.BuildIdentityScript(names[0], guid));
+        var captured = identityResult.ExitCode == 0
+            ? JsonSerializer.Deserialize<WindowsAdapterIdentity>(identityResult.StdOut) : null;
+        Check(captured?.InterfaceGuid == guid && captured.PnpDeviceId == adapter.PNPDeviceID,
+            "actual PowerShell identity validation preserves GUID and PnP ID with an isolated fake provider");
+        var wrongNamespaceData = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(
+            new { GUID = guid, NetConnectionID = names[0], PNPDeviceID = @"ROOT\NET\{fixture}" })));
+        var rejected = await RunPowerShellFixture("function Get-CimInstance { [Text.Encoding]::UTF8.GetString("
+            + "[Convert]::FromBase64String('" + wrongNamespaceData + "'))|ConvertFrom-Json };"
+            + WindowsTunAdapterCleanup.BuildIdentityScript(names[0], guid));
+        Check(rejected.ExitCode != 0, "a non-Wintun provider fixture cannot supply removable ownership");
+        var providerFailure = await RunPowerShellFixture("function Get-CimInstance { throw 'fixture provider unavailable' };"
+            + WindowsTunAdapterCleanup.BuildIdentityScript(names[0], guid));
+        Check(providerFailure.ExitCode != 0, "provider failure is not treated as adapter absence");
+        var removalData = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(removal));
+        var parsed = await RunPowerShellFixture("$source=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('"
+            + removalData + "'));$tokens=$null;$errors=$null;"
+            + "[void][Management.Automation.Language.Parser]::ParseInput($source,[ref]$tokens,[ref]$errors);"
+            + "if($errors.Count){exit 1};exit 0");
+        Check(parsed.ExitCode == 0, "privileged removal script parses without executing a device mutation");
+    }
 
     var occupied = new TcpListener(IPAddress.Loopback, 0);
     occupied.Start();

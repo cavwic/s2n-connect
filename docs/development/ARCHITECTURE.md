@@ -13,8 +13,9 @@
 ## Server
 
 - Initial target: Ubuntu/Debian with root SSH.
-- Xray VLESS + REALITY + Vision on TCP 443.
-- Existing `/root/s2n-profile.json` and valid Xray configuration are reused.
+- Default transport: Hysteria 2 on UDP 443, with a checksum-pinned upstream binary and an independent `s2n-hysteria.service`.
+- Certificate trust is returned over fingerprint-verified SSH and embedded in client profiles; TLS verification remains enabled.
+- Existing VLESS + REALITY + Vision on TCP 443 remains available. Existing valid profiles are reused; foreign services and inconsistent configurations are not overwritten.
 
 ## Routing
 
@@ -36,8 +37,11 @@ The macOS and Linux privilege paths are alpha and require integration testing on
 
 The UI treats process state and network health as separate signals:
 
-1. If the configured sing-box executable is not running, state is `Disconnected`; no Google request is made.
-2. If sing-box is running, S2N probes `https://www.google.com/generate_204` through the managed local proxy at `127.0.0.1:2080`.
+1. An owned core is identified by PID, start time, executable and configuration. Readiness also requires its TUN adapter and loopback listener.
+2. S2N probes `https://www.google.com/generate_204` through its allocated loopback proxy port (2080 by default; an occupied port is preserved).
 3. A successful response sets the UI to `Connected` and triggers a best-effort exit-IP lookup.
 4. A failed probe sets the display to `Disconnected / sing-box running`, but the Stop action remains enabled because process state is authoritative for lifecycle controls.
 5. Refresh operations are serialized so a slow probe cannot overlap the next timer tick.
+6. UDP readiness is proved by actual proxy traffic rather than a TCP 443 probe. Each Windows connection receives a fresh adapter identity.
+
+Tests can set `S2N_DATA_DIRECTORY` to an absolute temporary directory to isolate the desktop UI from existing user settings. Production defaults are unchanged.

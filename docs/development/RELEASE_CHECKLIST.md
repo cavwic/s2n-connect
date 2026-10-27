@@ -9,6 +9,9 @@
 - [ ] Confirm LAN/NAS traffic remains direct.
 - [ ] Confirm process rules and domain rules operate independently.
 - [ ] Confirm Stop and Exit remove the TUN route and restore DNS.
+- [ ] Verify UDP 443 with real QUIC traffic; wrong certificate, TLS name and password must fail without direct fallback.
+- [ ] Run three first-start Windows TUN cycles and cancellation cleanup while preserving an unrelated core and adapter.
+- [ ] Verify imported legacy VLESS and Hysteria2 profiles, atomic credential storage, and portable iOS certificate trust.
 - [ ] Sign Windows artifacts.
 - [ ] Sign and notarize macOS artifacts.
 - [ ] Publish SHA-256 and artifact attestations.

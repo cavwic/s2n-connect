@@ -151,7 +151,7 @@ internal sealed record TunStartupOptions(
 
 public sealed record OwnedCoreProcess(
     int Pid, long StartTimeUtcTicks, string ExecutablePath, string ConfigPath, bool Ready = false,
-    string LauncherExecutablePath = "")
+    string LauncherExecutablePath = "", string InterfaceName = "", string InterfaceGuid = "", string PnpDeviceId = "")
 {
     public bool Matches(int pid, long startTimeUtcTicks, string executablePath, string configPath, bool isWindows) =>
         Pid == pid && StartTimeUtcTicks == startTimeUtcTicks
